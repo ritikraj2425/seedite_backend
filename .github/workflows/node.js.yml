@@ -30,4 +30,4 @@ jobs:
     - run: npm run build --if-present
     - run: 
         printf "%s" "${{ secrets.PROD_ENV_FILE }}" > .env
-    -run: pm2 restart Backendapi
+    - run: pm2 restart Backendapi
