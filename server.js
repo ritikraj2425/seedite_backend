@@ -22,6 +22,8 @@ app.use(cors({
         "http://localhost:3000",
         "http://localhost:3001",
         "https://seedite.vercel.app",
+        "https://www.seedite.in",
+        "https://seedite.in",
     ],
     credentials: true
 }));
