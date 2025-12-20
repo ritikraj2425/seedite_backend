@@ -80,6 +80,14 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
+app.use('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        time: new Date().toISOString(),
+        env: process.env.NODE_ENV,
+        db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    });
+});
 
 // Serve uploaded videos (for local/dev only - in prod use S3/CDN)
 if (process.env.NODE_ENV !== 'production') {
