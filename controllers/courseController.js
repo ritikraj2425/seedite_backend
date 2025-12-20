@@ -21,6 +21,10 @@ const getCourseById = async (req, res) => {
     try {
         const course = await Course.findById(req.params.id)
             .populate('lectures')
+            .populate({
+                path: 'sections.lectures',
+                model: 'Lecture'
+            })
             .populate('mockTests');
 
         if (!course) {
@@ -38,6 +42,18 @@ const getCourseById = async (req, res) => {
                     videoUrl: getCloudFrontUrl(lecture.videoKey)  // Construct full URL
                 }));
             }
+
+            // Transform URLs for section lectures
+            if (courseObj.sections) {
+                courseObj.sections = courseObj.sections.map(section => ({
+                    ...section,
+                    lectures: section.lectures.map(lecture => ({
+                        ...lecture,
+                        videoUrl: getCloudFrontUrl(lecture.videoKey)
+                    }))
+                }));
+            }
+
             // Transform videoSolutionKey to full CloudFront URL for mock tests
             if (courseObj.mockTests) {
                 courseObj.mockTests = courseObj.mockTests.map(test => ({
@@ -48,7 +64,7 @@ const getCourseById = async (req, res) => {
             res.json(courseObj);
         } else {
             // Return only public info
-            const publicInfo = await Course.findById(req.params.id).select('-lectures -mockTests');
+            const publicInfo = await Course.findById(req.params.id).select('-lectures -sections.lectures -mockTests');
             res.json({ ...publicInfo.toObject(), isEnrolled: false });
         }
     } catch (error) {

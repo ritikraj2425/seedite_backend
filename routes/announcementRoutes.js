@@ -17,7 +17,7 @@ router.get('/my-announcements', protect, async (req, res) => {
         // However, standard protect might not populate enrolledCourses fully if it's just ID.
         // Assuming req.user has enrolledCourses array of IDs.
 
-        const enrolledCourseIds = req.user.enrolledCourses;
+        const enrolledCourseIds = req.user?.enrolledCourses || [];
 
         if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
             return res.json([]);

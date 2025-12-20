@@ -150,7 +150,7 @@ const deleteCourse = async (req, res) => {
 // @access  Admin
 const createLecture = async (req, res) => {
     try {
-        const { title, videoKey, duration, isFree, courseId } = req.body;
+        const { title, videoKey, duration, isFree, courseId, sectionId } = req.body;
 
         if (!videoKey) {
             return res.status(400).json({ message: 'Video key is required (CloudFront file key)' });
@@ -165,9 +165,18 @@ const createLecture = async (req, res) => {
         });
 
         // Add lecture to course
-        await Course.findByIdAndUpdate(courseId, {
-            $push: { lectures: lecture._id }
-        }, { new: true });
+        if (sectionId) {
+            // Add to specific section ONLY
+            await Course.updateOne(
+                { _id: courseId, 'sections._id': sectionId },
+                { $push: { 'sections.$.lectures': lecture._id } }
+            );
+        } else {
+            // Add to root lectures (ungrouped)
+            await Course.findByIdAndUpdate(courseId, {
+                $push: { lectures: lecture._id }
+            }, { new: true });
+        }
 
         res.status(201).json(lecture);
     } catch (error) {
@@ -201,6 +210,74 @@ const updateLecture = async (req, res) => {
     }
 };
 
+// @desc    Create section
+// @route   POST /api/admin/courses/:id/sections
+// @access  Admin
+const createSection = async (req, res) => {
+    try {
+        const { title } = req.body;
+        const course = await Course.findById(req.params.id);
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        course.sections.push({ title, lectures: [] });
+        await course.save();
+
+        res.status(201).json(course.sections[course.sections.length - 1]);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update section
+// @route   PUT /api/admin/courses/:id/sections/:sectionId
+// @access  Admin
+const updateSection = async (req, res) => {
+    try {
+        const { title } = req.body;
+        const { id, sectionId } = req.params;
+
+        const course = await Course.findOneAndUpdate(
+            { _id: id, 'sections._id': sectionId },
+            { $set: { 'sections.$.title': title } },
+            { new: true }
+        );
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course or Section not found' });
+        }
+
+        res.json(course.sections.id(sectionId));
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Delete section
+// @route   DELETE /api/admin/courses/:id/sections/:sectionId
+// @access  Admin
+const deleteSection = async (req, res) => {
+    try {
+        const { id, sectionId } = req.params;
+
+        const course = await Course.findByIdAndUpdate(
+            id,
+            { $pull: { sections: { _id: sectionId } } },
+            { new: true }
+        );
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        res.json({ message: 'Section deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 // @desc    Delete lecture
 // @route   DELETE /api/admin/lectures/:id
 // @access  Admin
@@ -212,9 +289,12 @@ const deleteLecture = async (req, res) => {
             return res.status(404).json({ message: 'Lecture not found' });
         }
 
-        // Remove from course
+        // Remove from course (both root lectures and sections)
         await Course.findByIdAndUpdate(lecture.course, {
-            $pull: { lectures: lecture._id }
+            $pull: {
+                lectures: lecture._id,
+                'sections.$[].lectures': lecture._id
+            }
         });
 
         await Lecture.deleteOne({ _id: req.params.id });
@@ -316,5 +396,8 @@ module.exports = {
     deleteLecture,
     createMockTest,
     updateMockTest,
-    deleteMockTest
+    deleteMockTest,
+    createSection,
+    updateSection,
+    deleteSection
 };

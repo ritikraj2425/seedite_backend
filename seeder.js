@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Course = require('./models/Course');
+const Lecture = require('./models/Lecture');
 const MockTest = require('./models/MockTest');
 
 dotenv.config();
@@ -37,29 +38,36 @@ const importData = async () => {
         console.log('Users created');
 
         // Courses
+        // Create Lectures for Course 1
+        const lecture1 = await Lecture.create({ title: 'Introduction to Next.js', videoKey: 'dummy_key_1', duration: '10:00', isFree: true, course: null }); // Temp null course
+        const lecture2 = await Lecture.create({ title: 'Routing in Next.js', videoKey: 'dummy_key_2', duration: '15:00', isFree: false, course: null });
+        const lecture3 = await Lecture.create({ title: 'Server Components', videoKey: 'dummy_key_3', duration: '20:00', isFree: false, course: null });
+
         const course1 = new Course({
             title: 'Complete Next.js Bootcamp',
             description: 'Learn Next.js from scratch to advanced. This course covers everything you need to know about App Router, Server Actions, and more.',
             price: 4999,
-            thumbnail: 'https://images.unsplash.com/photo-1649180556628-9ba704115795?q=80&w=600&auto=format&fit=crop', // Placeholder
-            lectures: [
-                { title: 'Introduction to Next.js', videoUrl: 'https://www.youtube.com/watch?v=gwWDa5ZkFq8', duration: '10:00', isFree: true },
-                { title: 'Routing in Next.js', videoUrl: 'https://www.youtube.com/watch?v=gwWDa5ZkFq8', duration: '15:00', isFree: false },
-                { title: 'Server Components', videoUrl: 'https://www.youtube.com/watch?v=gwWDa5ZkFq8', duration: '20:00', isFree: false }
-            ]
+            thumbnail: 'https://images.unsplash.com/photo-1649180556628-9ba704115795?q=80&w=600&auto=format&fit=crop',
+            lectures: [lecture1._id, lecture2._id, lecture3._id]
         });
         await course1.save();
+
+        // Update lectures with course ID
+        await Lecture.updateMany({ _id: { $in: [lecture1._id, lecture2._id, lecture3._id] } }, { course: course1._id });
+
+        // Create Lectures for Course 2
+        const lecture4 = await Lecture.create({ title: 'Functions and Graphs', videoKey: 'dummy_key_4', duration: '45:00', isFree: true, course: null });
 
         const course2 = new Course({
             title: 'Advanced Mathematics for JEE',
             description: 'Master Calculus, Algebra, and Trigonometry with ease. Includes extensive mock tests.',
             price: 2999,
             thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=600&auto=format&fit=crop',
-            lectures: [
-                { title: 'Functions and Graphs', videoUrl: 'https://www.youtube.com/watch?v=gwWDa5ZkFq8', duration: '45:00', isFree: true }
-            ]
+            lectures: [lecture4._id]
         });
         await course2.save();
+
+        await Lecture.updateMany({ _id: { $in: [lecture4._id] } }, { course: course2._id });
 
         // Mock Tests
         const mockTest1 = await MockTest.create({

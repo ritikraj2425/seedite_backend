@@ -10,7 +10,10 @@ const {
     deleteLecture,
     createMockTest,
     updateMockTest,
-    deleteMockTest
+    deleteMockTest,
+    createSection,
+    updateSection,
+    deleteSection
 } = require('../controllers/adminController');
 const { getAllUsers } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
@@ -44,5 +47,10 @@ router.delete('/lectures/:id', protect, adminProtect, deleteLecture);
 router.post('/mock-tests', protect, adminProtect, createMockTest);
 router.put('/mock-tests/:id', protect, adminProtect, updateMockTest);
 router.delete('/mock-tests/:id', protect, adminProtect, deleteMockTest);
+
+// Section routes
+router.post('/courses/:id/sections', protect, adminProtect, createSection);
+router.put('/courses/:id/sections/:sectionId', protect, adminProtect, updateSection);
+router.delete('/courses/:id/sections/:sectionId', protect, adminProtect, deleteSection);
 
 module.exports = router;

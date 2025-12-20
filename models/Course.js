@@ -33,6 +33,16 @@ const courseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Lecture'
     }],
+    sections: [{
+        title: {
+            type: String,
+            required: true
+        },
+        lectures: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Lecture'
+        }]
+    }],
     mockTests: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MockTest'
