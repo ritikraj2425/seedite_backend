@@ -1,0 +1,131 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
+
+// Only load .env file in development, not in production
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+}
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+    origin: [
+        process.env.FRONTEND_URL,
+        process.env.ADMIN_FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://seedite.vercel.app",
+    ],
+    credentials: true
+}));
+
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({
+        message: 'API is working',
+        time: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Health Check with connection test
+app.get('/api/health', async (req, res) => {
+    try {
+        // Try to ping the database for a real health check
+        if (mongoose.connection.readyState === 1) {
+            await mongoose.connection.db.admin().ping();
+        }
+
+        res.json({
+            status: 'ok',
+            time: new Date().toISOString(),
+            env: process.env.NODE_ENV,
+            db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+        });
+    } catch (error) {
+        res.json({
+            status: 'degraded',
+            time: new Date().toISOString(),
+            env: process.env.NODE_ENV,
+            db: 'disconnected',
+            error: 'Database ping failed'
+        });
+    }
+});
+
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const userRoutes = require('./routes/userRoutes');
+const mockTestRoutes = require('./routes/mockTestRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const videoRoutes = require('./routes/videoRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/mock-tests', mockTestRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
+app.use('/api/announcements', require('./routes/announcementRoutes'));
+
+// Serve uploaded videos (for local/dev only - in prod use S3/CDN)
+if (process.env.NODE_ENV !== 'production') {
+    app.use('/uploads', express.static('uploads'));
+}
+
+// Root route
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Seedite Education Platform API',
+        status: 'running',
+        environment: process.env.NODE_ENV || 'development',
+        documentation: '/api/health for status'
+    });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Global Error Handler:', err);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        message: `Route not found: ${req.method} ${req.originalUrl}`
+    });
+});
+
+// Connect to MongoDB and start server
+const connectDB = require('./config/db');
+
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`📊 MongoDB: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
+            console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        });
+    })
+    .catch((err) => {
+        console.error('❌ Failed to start server:', err);
+        process.exit(1);
+    });
+
+module.exports = app; // For testing only
