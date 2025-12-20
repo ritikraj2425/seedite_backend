@@ -23,7 +23,8 @@ const upload = multer({
     limits: { fileSize: 1000 * 1024 * 1024 } // 1000MB limit
 });
 
-router.post('/s3', protect, admin, upload.single('file'), async (req, res) => {
+// Helper function to handle the S3 upload logic
+const handleS3Upload = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
@@ -37,15 +38,34 @@ router.post('/s3', protect, admin, upload.single('file'), async (req, res) => {
 
         res.json({
             url: result.url,
-            key: result.key, // Useful if we need just the key
+            key: result.key,
             message: 'File uploaded successfully'
         });
     } catch (error) {
         console.error('S3 Upload Error:', error);
         // Attempt to clean up even on error
         if (req.file && req.file.path) await unlinkFile(req.file.path).catch(() => { });
-        res.status(500).json({ message: 'Failed to upload file' });
+        res.status(500).json({ message: 'Failed to upload file', error: error.message });
     }
+};
+
+// Main upload route - expects field name 'file'
+router.post('/s3', protect, admin, upload.single('file'), handleS3Upload);
+
+// Alternative route for images - expects field name 'image'
+router.post('/s3/image', protect, admin, upload.single('image'), handleS3Upload);
+
+// Multer error handling middleware
+router.use((error, req, res, next) => {
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({
+            message: `Unexpected field name: '${error.field}'. Use 'file' for /api/upload/s3 or 'image' for /api/upload/s3/image`
+        });
+    }
+    if (error.name === 'MulterError') {
+        return res.status(400).json({ message: error.message });
+    }
+    next(error);
 });
 
 module.exports = router;
