@@ -56,6 +56,18 @@ const paymentSchema = new mongoose.Schema({
     },
     errorLog: {
         type: String
+    },
+    coupon: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Coupon',
+        default: null
+    },
+    discountApplied: {
+        type: Number,
+        default: 0
+    },
+    originalAmount: {
+        type: Number
     }
 }, {
     timestamps: true

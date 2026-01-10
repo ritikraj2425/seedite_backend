@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const Coupon = require('../models/Coupon');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -15,7 +16,7 @@ const razorpay = new Razorpay({
 // @access  Private
 const createOrder = async (req, res) => {
     try {
-        const { courseId } = req.body;
+        const { courseId, couponCode } = req.body;
 
         // Get course details
         const course = await Course.findById(courseId);
@@ -29,15 +30,71 @@ const createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Already enrolled in this course' });
         }
 
+        let finalPrice = course.price;
+        let discountApplied = 0;
+        let couponId = null;
+        let couponData = null;
+
+        // Validate and apply coupon if provided
+        if (couponCode) {
+            const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+
+            if (!coupon) {
+                return res.status(400).json({ message: 'Invalid coupon code' });
+            }
+
+            // Check if coupon is active
+            if (!coupon.isActive) {
+                return res.status(400).json({ message: 'This coupon is no longer active' });
+            }
+
+            // Check expiry
+            if (coupon.expiryDate < new Date()) {
+                return res.status(400).json({ message: 'This coupon has expired' });
+            }
+
+            // Check usage limit
+            if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+                return res.status(400).json({ message: 'This coupon has reached its usage limit' });
+            }
+
+            // Check if coupon is course-specific
+            if (coupon.course && coupon.course.toString() !== courseId) {
+                return res.status(400).json({ message: 'This coupon is not valid for this course' });
+            }
+
+            // Check minimum purchase amount
+            if (coupon.minPurchaseAmount > course.price) {
+                return res.status(400).json({
+                    message: `This coupon requires a minimum purchase of ₹${coupon.minPurchaseAmount}`
+                });
+            }
+
+            // Calculate discount
+            discountApplied = coupon.calculateDiscount(course.price);
+            finalPrice = Math.max(0, course.price - discountApplied);
+            couponId = coupon._id;
+            couponData = {
+                code: coupon.code,
+                discountType: coupon.discountType,
+                discountValue: coupon.discountValue
+            };
+
+            console.log(`[Payment] Coupon ${coupon.code} applied: discount ₹${discountApplied}, final price ₹${finalPrice}`);
+        }
+
         // Create Razorpay order
         const options = {
-            amount: course.price * 100, // Amount in paise (INR smallest unit)
+            amount: finalPrice * 100, // Amount in paise (INR smallest unit)
             currency: 'INR',
             receipt: `rcpt_${courseId.toString().slice(-6)}_${Date.now()}`, // Shortened to fit 40 chars limit
             notes: {
                 courseId: courseId,
                 userId: req.user._id.toString(),
-                courseTitle: course.title
+                courseTitle: course.title,
+                couponCode: couponCode || '',
+                originalPrice: course.price,
+                discountApplied: discountApplied
             }
         };
 
@@ -48,7 +105,10 @@ const createOrder = async (req, res) => {
             razorpay_order_id: order.id,
             user: req.user._id,
             course: courseId,
-            amount: course.price,
+            amount: finalPrice,
+            originalAmount: course.price,
+            discountApplied: discountApplied,
+            coupon: couponId,
             currency: 'INR',
             status: 'created'
         });
@@ -61,8 +121,11 @@ const createOrder = async (req, res) => {
             course: {
                 id: course._id,
                 title: course.title,
-                price: course.price
+                price: course.price,
+                finalPrice: finalPrice
             },
+            coupon: couponData,
+            discountApplied: discountApplied,
             key: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
@@ -70,6 +133,7 @@ const createOrder = async (req, res) => {
         res.status(500).json({ message: 'Failed to create payment order', error: error.message });
     }
 };
+
 
 // @desc    Verify payment and enroll user
 // @route   POST /api/payment/verify
@@ -125,6 +189,14 @@ const verifyPayment = async (req, res) => {
             if (paymentRecord) {
                 paymentRecord.enrollmentStatus = 'enrolled';
                 await paymentRecord.save();
+
+                // Increment coupon usage count if a coupon was used
+                if (paymentRecord.coupon) {
+                    await Coupon.findByIdAndUpdate(paymentRecord.coupon, {
+                        $inc: { usedCount: 1 }
+                    });
+                    console.log(`[Payment] Coupon usage incremented for coupon: ${paymentRecord.coupon}`);
+                }
             }
 
             console.log(`[Payment] User ${req.user._id} enrolled in course ${courseId} via client verification`);

@@ -24,6 +24,7 @@ app.use(cors({
         "https://seedite.vercel.app",
         "https://www.seedite.in",
         "https://seedite.in",
+        "https://seedite-admin.vercel.app",
     ],
     credentials: true
 }));
@@ -70,6 +71,7 @@ const mockTestRoutes = require('./routes/mockTestRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const couponRoutes = require('./routes/couponRoutes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -79,6 +81,7 @@ app.use('/api/mock-tests', mockTestRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
