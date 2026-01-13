@@ -1,9 +1,17 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
+// Generate a unique session ID
+const generateSessionId = () => {
+    const sessionId = crypto.randomUUID();
+    console.log(`[Auth] Generated new session ID: ${sessionId}`);
+    return sessionId;
+};
+
+const generateToken = (id, sessionId) => {
+    return jwt.sign({ id, sessionId }, process.env.JWT_SECRET || 'secret123', {
         expiresIn: '30d',
     });
 };
@@ -24,14 +32,18 @@ const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Generate session ID for this login
+        const sessionId = generateSessionId();
+
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
+            activeSessionToken: sessionId
         });
 
         if (user) {
-            const token = generateToken(user._id);
+            const token = generateToken(user._id, sessionId);
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
@@ -64,13 +76,22 @@ const loginUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
-            const token = generateToken(user._id);
+            // Generate new session ID - this invalidates any previous sessions
+            const sessionId = generateSessionId();
+
+            // Save new session ID to user (invalidates old sessions)
+            user.activeSessionToken = sessionId;
+            await user.save();
+
+            const token = generateToken(user._id, sessionId);
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
                 sameSite: 'strict'
             });
+
+            console.log(`[Auth] User ${user.email} logged in with new session: ${sessionId}`);
 
             res.json({
                 _id: user._id,
@@ -90,7 +111,16 @@ const loginUser = async (req, res) => {
 // @desc    Logout user / clear cookie
 // @route   POST /api/auth/logout
 // @access  Public
-const logoutUser = (req, res) => {
+const logoutUser = async (req, res) => {
+    try {
+        // Clear the session token if user is authenticated
+        if (req.user) {
+            await User.findByIdAndUpdate(req.user._id, { activeSessionToken: null });
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+
     res.cookie('token', '', {
         httpOnly: true,
         expires: new Date(0)

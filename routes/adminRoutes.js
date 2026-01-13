@@ -13,7 +13,8 @@ const {
     deleteMockTest,
     createSection,
     updateSection,
-    deleteSection
+    deleteSection,
+    getAllFeedback
 } = require('../controllers/adminController');
 const { getAllUsers } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
@@ -32,6 +33,9 @@ router.get('/stats', protect, adminProtect, getAdminStats);
 
 // Users
 router.get('/users', protect, adminProtect, getAllUsers);
+
+// Feedback
+router.get('/feedback', protect, adminProtect, getAllFeedback);
 
 // Course routes
 router.post('/courses', protect, adminProtect, createCourse);

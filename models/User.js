@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }],
+    activeSessionToken: {
+        type: String,
+        default: null
+    },
     mockTestResults: [{
         test: {
             type: mongoose.Schema.Types.ObjectId,

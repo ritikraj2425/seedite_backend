@@ -2,6 +2,7 @@ const Course = require('../models/Course');
 const Lecture = require('../models/Lecture');
 const MockTest = require('../models/MockTest');
 const User = require('../models/User');
+const Feedback = require('../models/Feedback');
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
@@ -386,6 +387,32 @@ const deleteMockTest = async (req, res) => {
     }
 };
 
+// @desc    Get all feedback
+// @route   GET /api/admin/feedback
+// @access  Admin
+const getAllFeedback = async (req, res) => {
+    try {
+        const feedbacks = await Feedback.find()
+            .populate('user', 'name email')
+            .populate('course', 'title')
+            .sort({ createdAt: -1 });
+
+        // Map 'course' to 'courseId' for frontend compatibility
+        const mappedFeedbacks = feedbacks.map(f => {
+            const doc = f.toObject();
+            return {
+                ...doc,
+                courseId: doc.course
+            };
+        });
+
+        res.json(mappedFeedbacks);
+    } catch (error) {
+        console.error('Fetch Feedback Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     getAdminStats,
     createCourse,
@@ -399,5 +426,6 @@ module.exports = {
     deleteMockTest,
     createSection,
     updateSection,
-    deleteSection
+    deleteSection,
+    getAllFeedback
 };

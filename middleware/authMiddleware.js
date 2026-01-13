@@ -22,6 +22,28 @@ const protect = async (req, res, next) => {
             return res.status(401).json({ message: 'Not authorized, user not found' });
         }
 
+        // Check if session is still valid (single device login)
+        if (decoded.sessionId) {
+            if (req.user.activeSessionToken !== decoded.sessionId) {
+                console.log(`[Auth] Session BLOCKED for user ${req.user.email} (${req.user._id}). Token session: ${decoded.sessionId}, Active session: ${req.user.activeSessionToken}`);
+                return res.status(401).json({
+                    message: 'Session expired. You have been logged in on another device.',
+                    code: 'SESSION_EXPIRED'
+                });
+            } else {
+                console.log(`[Auth] Session VALID for user ${req.user.email} (${req.user._id}). Session ID: ${decoded.sessionId}`);
+            }
+        } else {
+
+            // If user has an active session in DB, this legacy token is invalid
+            if (req.user.activeSessionToken) {
+                return res.status(401).json({
+                    message: 'Session expired. You have been logged in on another device.',
+                    code: 'SESSION_EXPIRED'
+                });
+            }
+        }
+
         next();
     } catch (error) {
         console.error(error);
