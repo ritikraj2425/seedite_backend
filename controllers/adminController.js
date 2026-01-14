@@ -314,14 +314,23 @@ const createMockTest = async (req, res) => {
 
         const mockTest = await MockTest.create({
             title,
-            duration,
-            totalQuestions,
-            passingScore,
-            correctMarks,
-            incorrectMarks,
-            videoSolutionKey: videoSolutionKey || '',  // CloudFront file key
+            duration: parseInt(duration) || 0,
+            totalQuestions: parseInt(totalQuestions) || 0,
+            passingScore: parseInt(passingScore) || 0,
+            correctMarks: correctMarks !== undefined ? parseInt(correctMarks) : 4,
+            incorrectMarks: incorrectMarks !== undefined ? parseInt(incorrectMarks) : -1,
+            videoSolutionKey: videoSolutionKey || '',
             course: courseId,
-            questions: questions || []
+            questions: (questions || []).map(q => ({
+                type: q.type || 'mcq',
+                text: q.questionText || q.text || '',
+                image: q.image || '',
+                options: q.options || [],
+                correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
+                externalLink: q.externalLink || '',
+                isUnrated: q.isUnrated || false,
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4
+            }))
         });
 
         // Add mock test to course
@@ -349,12 +358,24 @@ const updateMockTest = async (req, res) => {
         const { title, duration, totalQuestions, passingScore, correctMarks, incorrectMarks, questions, videoSolutionKey } = req.body;
 
         mockTest.title = title || mockTest.title;
-        mockTest.duration = duration || mockTest.duration;
-        mockTest.totalQuestions = totalQuestions || mockTest.totalQuestions;
-        mockTest.passingScore = passingScore || mockTest.passingScore;
-        mockTest.correctMarks = correctMarks !== undefined ? correctMarks : mockTest.correctMarks;
-        mockTest.incorrectMarks = incorrectMarks !== undefined ? incorrectMarks : mockTest.incorrectMarks;
-        if (questions) mockTest.questions = questions;
+        mockTest.duration = duration !== undefined ? parseInt(duration) : mockTest.duration;
+        mockTest.totalQuestions = totalQuestions !== undefined ? parseInt(totalQuestions) : mockTest.totalQuestions;
+        mockTest.passingScore = passingScore !== undefined ? parseInt(passingScore) : mockTest.passingScore;
+        mockTest.correctMarks = correctMarks !== undefined ? parseInt(correctMarks) : mockTest.correctMarks;
+        mockTest.incorrectMarks = incorrectMarks !== undefined ? parseInt(incorrectMarks) : mockTest.incorrectMarks;
+
+        if (questions) {
+            mockTest.questions = questions.map(q => ({
+                type: q.type || 'mcq',
+                text: q.questionText || q.text || '',
+                image: q.image || '',
+                options: q.options || [],
+                correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
+                externalLink: q.externalLink || '',
+                isUnrated: q.isUnrated || false,
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4
+            }));
+        }
         if (videoSolutionKey !== undefined) mockTest.videoSolutionKey = videoSolutionKey;
 
         const updatedMockTest = await mockTest.save();

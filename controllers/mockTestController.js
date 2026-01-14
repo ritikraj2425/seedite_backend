@@ -31,6 +31,9 @@ const getMockTestById = async (req, res) => {
         if (mockTestObj.questions) {
             mockTestObj.questions = mockTestObj.questions.map(q => ({
                 ...q,
+                type: q.type || 'mcq',
+                externalLink: q.externalLink || '',
+                isUnrated: q.isUnrated || false,
                 correctOptionIndex: q.correctOption,  // Frontend expects correctOptionIndex
                 questionText: q.text  // Frontend expects questionText, admin saves as text
             }));

@@ -1,11 +1,14 @@
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
+    type: { type: String, enum: ['mcq', 'code'], default: 'mcq' },
     text: { type: String, required: true },
     image: { type: String }, // URL of the question image
-    options: [{ type: String, required: true }],
-    correctOption: { type: Number, required: true },
-    marks: { type: Number, default: 4 } // Keeping per-question marks if needed, but will rely on test defaults usually
+    options: [{ type: String }],
+    correctOption: { type: String },
+    externalLink: { type: String },
+    isUnrated: { type: Boolean, default: false },
+    marks: { type: Number, default: 4 }
 });
 
 const mockTestSchema = new mongoose.Schema({
