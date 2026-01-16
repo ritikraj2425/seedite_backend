@@ -3,6 +3,7 @@ const Lecture = require('../models/Lecture');
 const MockTest = require('../models/MockTest');
 const User = require('../models/User');
 const Feedback = require('../models/Feedback');
+const FreeAccess = require('../models/FreeAccess');
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
@@ -62,6 +63,15 @@ const getAdminStats = async (req, res) => {
             });
         }
 
+        // Free Access Analytics
+        const freeAccessCount = await FreeAccess.countDocuments();
+        const freeAccessDetails = await FreeAccess.find()
+            .populate('user', 'name email')
+            .populate('course', 'title')
+            .populate('grantedBy', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(50);
+
         res.json({
             totalCourses,
             totalUsers,
@@ -69,7 +79,9 @@ const getAdminStats = async (req, res) => {
             totalMockTests,
             recentCourses,
             recentUsers,
-            courseAnalytics
+            courseAnalytics,
+            freeAccessCount,
+            freeAccessDetails
         });
     } catch (error) {
         console.error('Stats Error:', error);
@@ -329,7 +341,8 @@ const createMockTest = async (req, res) => {
                 correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
                 externalLink: q.externalLink || '',
                 isUnrated: q.isUnrated || false,
-                marks: q.marks !== undefined ? parseInt(q.marks) : 4
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4,
+                solution: q.solution || '' // Optional solution text
             }))
         });
 
@@ -373,7 +386,8 @@ const updateMockTest = async (req, res) => {
                 correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
                 externalLink: q.externalLink || '',
                 isUnrated: q.isUnrated || false,
-                marks: q.marks !== undefined ? parseInt(q.marks) : 4
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4,
+                solution: q.solution || '' // Optional solution text
             }));
         }
         if (videoSolutionKey !== undefined) mockTest.videoSolutionKey = videoSolutionKey;
@@ -434,6 +448,113 @@ const getAllFeedback = async (req, res) => {
     }
 };
 
+// @desc    Grant free access to a user for a course
+// @route   POST /api/admin/free-access
+// @access  Admin
+const grantFreeAccess = async (req, res) => {
+    try {
+        const { userId, courseId, reason } = req.body;
+
+        // Validate inputs
+        if (!userId || !courseId) {
+            return res.status(400).json({ message: 'userId and courseId are required' });
+        }
+
+        // Check if user exists
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if course exists
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Check if already enrolled
+        if (user.enrolledCourses.includes(courseId)) {
+            return res.status(400).json({ message: 'User is already enrolled in this course' });
+        }
+
+        // Create free access record
+        const freeAccess = await FreeAccess.create({
+            user: userId,
+            course: courseId,
+            grantedBy: req.user._id,
+            reason: reason || ''
+        });
+
+        // Enroll user in course
+        user.enrolledCourses.push(courseId);
+        await user.save();
+
+        console.log(`[Admin] Free access granted: ${user.email} -> ${course.title} by ${req.user.email}`);
+
+        res.status(201).json({
+            message: 'Free access granted successfully',
+            freeAccess: {
+                user: { _id: user._id, name: user.name, email: user.email },
+                course: { _id: course._id, title: course.title },
+                reason: freeAccess.reason,
+                createdAt: freeAccess.createdAt
+            }
+        });
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Free access already granted to this user for this course' });
+        }
+        console.error('Grant Free Access Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Revoke free access from a user for a course
+// @route   DELETE /api/admin/free-access/:userId/:courseId
+// @access  Admin
+const revokeFreeAccess = async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
+
+        // Find and delete free access record
+        const freeAccess = await FreeAccess.findOneAndDelete({ user: userId, course: courseId });
+
+        if (!freeAccess) {
+            return res.status(404).json({ message: 'Free access record not found' });
+        }
+
+        // Remove user from course enrollment
+        await User.findByIdAndUpdate(userId, {
+            $pull: { enrolledCourses: courseId }
+        });
+
+        console.log(`[Admin] Free access revoked: userId ${userId} from courseId ${courseId}`);
+
+        res.json({ message: 'Free access revoked successfully' });
+    } catch (error) {
+        console.error('Revoke Free Access Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Get all free access records
+// @route   GET /api/admin/free-access
+// @access  Admin
+const getFreeAccessList = async (req, res) => {
+    try {
+        const freeAccessList = await FreeAccess.find()
+            .populate('user', 'name email')
+            .populate('course', 'title price')
+            .populate('grantedBy', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.json(freeAccessList);
+    } catch (error) {
+        console.error('Get Free Access List Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     getAdminStats,
     createCourse,
@@ -448,5 +569,9 @@ module.exports = {
     createSection,
     updateSection,
     deleteSection,
-    getAllFeedback
+    getAllFeedback,
+    grantFreeAccess,
+    revokeFreeAccess,
+    getFreeAccessList
 };
+

@@ -8,7 +8,8 @@ const questionSchema = new mongoose.Schema({
     correctOption: { type: String },
     externalLink: { type: String },
     isUnrated: { type: Boolean, default: false },
-    marks: { type: Number, default: 4 }
+    marks: { type: Number, default: 4 },
+    solution: { type: String, default: '' } // Optional solution/explanation text
 });
 
 const mockTestSchema = new mongoose.Schema({

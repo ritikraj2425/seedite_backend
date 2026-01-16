@@ -14,7 +14,10 @@ const {
     createSection,
     updateSection,
     deleteSection,
-    getAllFeedback
+    getAllFeedback,
+    grantFreeAccess,
+    revokeFreeAccess,
+    getFreeAccessList
 } = require('../controllers/adminController');
 const { getAllUsers } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
@@ -56,5 +59,10 @@ router.delete('/mock-tests/:id', protect, adminProtect, deleteMockTest);
 router.post('/courses/:id/sections', protect, adminProtect, createSection);
 router.put('/courses/:id/sections/:sectionId', protect, adminProtect, updateSection);
 router.delete('/courses/:id/sections/:sectionId', protect, adminProtect, deleteSection);
+
+// Free Access routes
+router.get('/free-access', protect, adminProtect, getFreeAccessList);
+router.post('/free-access', protect, adminProtect, grantFreeAccess);
+router.delete('/free-access/:userId/:courseId', protect, adminProtect, revokeFreeAccess);
 
 module.exports = router;

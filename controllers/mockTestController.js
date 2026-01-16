@@ -35,7 +35,8 @@ const getMockTestById = async (req, res) => {
                 externalLink: q.externalLink || '',
                 isUnrated: q.isUnrated || false,
                 correctOptionIndex: q.correctOption,  // Frontend expects correctOptionIndex
-                questionText: q.text  // Frontend expects questionText, admin saves as text
+                questionText: q.text,  // Frontend expects questionText, admin saves as text
+                solution: q.solution || '' // Include solution in response
             }));
         }
 

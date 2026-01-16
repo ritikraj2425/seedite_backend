@@ -197,6 +197,25 @@ const verifyPayment = async (req, res) => {
                     });
                     console.log(`[Payment] Coupon usage incremented for coupon: ${paymentRecord.coupon}`);
                 }
+
+                // Send purchase confirmation email (non-blocking)
+                const course = await Course.findById(courseId);
+                if (course) {
+                    const { sendPurchaseConfirmationEmail } = require('../utils/emailService');
+                    sendPurchaseConfirmationEmail(
+                        user.email,
+                        user.name,
+                        { title: course.title, price: paymentRecord.originalAmount || course.price },
+                        {
+                            amount: paymentRecord.amount,
+                            paymentId: razorpay_payment_id,
+                            couponCode: paymentRecord.coupon ? '' : null, // Will be populated if needed
+                            discount: paymentRecord.discountApplied || 0
+                        }
+                    ).catch(err => {
+                        console.error('[Payment] Failed to send purchase confirmation email:', err);
+                    });
+                }
             }
 
             console.log(`[Payment] User ${req.user._id} enrolled in course ${courseId} via client verification`);
