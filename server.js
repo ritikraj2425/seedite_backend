@@ -13,19 +13,30 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL,
-        process.env.ADMIN_FRONTEND_URL,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://seedite.vercel.app",
-        "https://www.seedite.in",
-        "https://seedite.in",
-        "https://seedite-admin.vercel.app",
-    ],
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            process.env.FRONTEND_URL,
+            process.env.ADMIN_FRONTEND_URL,
+            "https://seedite.vercel.app",
+            "https://www.seedite.in",
+            "https://seedite.in",
+            "https://seedite-admin.vercel.app",
+        ];
+
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow any localhost origin in development
+        if (origin.startsWith('http://localhost') || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 
@@ -85,6 +96,8 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
+app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/testimonials', require('./routes/testimonialRoutes'));
 app.use('/api/health', (req, res) => {
     res.json({
         status: 'ok',

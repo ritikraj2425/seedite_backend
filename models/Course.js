@@ -21,6 +21,9 @@ const courseSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    originalPrice: {
+        type: Number
+    },
     category: {
         type: String,
         default: ''

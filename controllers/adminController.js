@@ -94,12 +94,13 @@ const getAdminStats = async (req, res) => {
 // @access  Admin
 const createCourse = async (req, res) => {
     try {
-        const { title, description, price, thumbnail, category, instructor, courseDetails } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails } = req.body;
 
         const course = await Course.create({
             title,
             description,
             price,
+            originalPrice,
             thumbnail,
             category,
             instructor: instructor || 'Ritik Raj',
@@ -123,11 +124,12 @@ const updateCourse = async (req, res) => {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        const { title, description, price, thumbnail, category, instructor, courseDetails } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails } = req.body;
 
         course.title = title || course.title;
         course.description = description || course.description;
         course.price = price !== undefined ? price : course.price;
+        course.originalPrice = originalPrice !== undefined ? originalPrice : course.originalPrice;
         course.thumbnail = thumbnail || course.thumbnail;
         course.category = category || course.category;
         course.instructor = instructor || course.instructor;

@@ -30,8 +30,6 @@ const protect = async (req, res, next) => {
                     message: 'Session expired. You have been logged in on another device.',
                     code: 'SESSION_EXPIRED'
                 });
-            } else {
-                console.log(`[Auth] Session VALID for user ${req.user.email} (${req.user._id}). Session ID: ${decoded.sessionId}`);
             }
         } else {
 

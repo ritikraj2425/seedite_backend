@@ -1,0 +1,74 @@
+[
+    {
+        "title": "test",
+        "course": "6960e65b670769cfa385fcc4",
+        "duration": 180,
+        "totalQuestions": 80,
+        "passingScore": 150,
+        "correctMarks": 4,
+        "incorrectMarks": -1,
+        "videoSolutionKey": "",
+        "questions": [
+            {
+                "type": "mcq",
+                "text": "Let f(x) = \u222b\u2080\u02e3 e^(-t\u00b2) dt. Find f'(x) + 2xf(x).",
+                "image": "",
+                "options": [
+                    "e^(-x\u00b2)",
+                    "1",
+                    "x\u00b7e^(-x\u00b2)",
+                    "2e^(-x\u00b2)"
+                ],
+                "correctOption": "1",
+                "externalLink": "",
+                "isUnrated": false,
+                "solution": ""
+            },
+            {
+                "type": "mcq",
+                "text": "The GRAPH below shows the number of books sold by a bookstore in three different months across four categories: Fiction, Non-Fiction, Science, and History.\nClick to enlarge\nThe bookstore follows the following policies:\nThe price of each Fiction book is \u20b9100.\nThe price of each Non-Fiction book is \u20b9120.\nThe price of each Science book is \u20b9150.\nThe price of each History book is \u20b9130.\nAdditionally, the bookstore implemented a sales promotion in March, increasing the price of Fiction books by 10%, decreasing the price of Non-Fiction books by 5%, and offering a 15% discount on Science books.\nWhat was the total revenue from the sale of books (across all categories) in the month of March, considering the changes in prices?",
+                "image": "",
+                "options": [
+                    "\u20b950432",
+                    "\u20b956415",
+                    "\u20b956890",
+                    "\u20b958972"
+                ],
+                "correctOption": "1",
+                "externalLink": "",
+                "isUnrated": false,
+                "solution": ""
+            },
+            {
+                "type": "mcq",
+                "text": "Passage: Blockchain technology, first implemented for Bitcoin, is a decentralized digital ledger that records transactions across many computers in such a way that the registered transactions cannot be altered retroactively. This technology offers transparency, security, and efficiency in various applications beyond cryptocurrencies, including supply chain management, voting systems, and digital identity verification.\n\nQuestion: What three benefits does blockchain technology offer according to the passage?",
+                "image": "",
+                "options": [
+                    "Speed, cost, and simplicity",
+                    "Transparency, security, and efficiency",
+                    "Privacy, anonymity, and speed",
+                    "Complexity, security, and cost-effectiveness"
+                ],
+                "correctOption": "1",
+                "externalLink": "",
+                "isUnrated": false,
+                "solution": ""
+            },
+            {
+                "type": "mcq",
+                "text": "Passage: Blockchain technology, first implemented for Bitcoin, is a decentralized digital ledger that records transactions across many computers in such a way that the registered transactions cannot be altered retroactively. This technology offers transparency, security, and efficiency in various applications beyond cryptocurrencies, including supply chain management, voting systems, and digital identity verification.\n\nQuestion: How does blockchain technology record transactions?",
+                "image": "",
+                "options": [
+                    "On a single central server",
+                    "Across many decentralized computers",
+                    "In paper ledgers",
+                    "Through manual entry systems"
+                ],
+                "correctOption": "1",
+                "externalLink": "",
+                "isUnrated": false,
+                "solution": ""
+            }
+        ]
+    }
+]
