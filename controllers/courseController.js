@@ -1,6 +1,6 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
-const { getCloudFrontUrl } = require('../config/cloudfront');
+const { getBunnyStreamUrl } = require('../config/bunny');
 
 // @desc    Get all courses
 // @route   GET /api/courses
@@ -39,7 +39,7 @@ const getCourseById = async (req, res) => {
             if (courseObj.lectures) {
                 courseObj.lectures = courseObj.lectures.map(lecture => ({
                     ...lecture,
-                    videoUrl: getCloudFrontUrl(lecture.videoKey)  // Construct full URL
+                    videoUrl: getBunnyStreamUrl(lecture.videoKey)  // Construct full URL
                 }));
             }
 
@@ -49,7 +49,7 @@ const getCourseById = async (req, res) => {
                     ...section,
                     lectures: section.lectures.map(lecture => ({
                         ...lecture,
-                        videoUrl: getCloudFrontUrl(lecture.videoKey)
+                        videoUrl: getBunnyStreamUrl(lecture.videoKey)
                     }))
                 }));
             }
@@ -58,7 +58,7 @@ const getCourseById = async (req, res) => {
             if (courseObj.mockTests) {
                 courseObj.mockTests = courseObj.mockTests.map(test => ({
                     ...test,
-                    videoSolutionUrl: getCloudFrontUrl(test.videoSolutionKey)  // Construct full URL
+                    videoSolutionUrl: getBunnyStreamUrl(test.videoSolutionKey)  // Construct full URL
                 }));
             }
             res.json(courseObj);

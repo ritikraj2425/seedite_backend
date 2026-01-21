@@ -43,7 +43,7 @@ const mockTestSchema = new mongoose.Schema({
         default: -1
     },
     videoSolutionKey: {
-        type: String,  // CloudFront file key for video solution
+        type: String,  // Bunny Stream video ID for video solution
         default: ''
     },
     questions: [questionSchema]

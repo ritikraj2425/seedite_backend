@@ -1,6 +1,6 @@
 const MockTest = require('../models/MockTest');
 const User = require('../models/User');
-const { getCloudFrontUrl } = require('../config/cloudfront');
+const { getBunnyStreamUrl } = require('../config/bunny');
 
 // @desc    Get mock test by ID
 // @route   GET /api/mock-tests/:id
@@ -25,7 +25,7 @@ const getMockTestById = async (req, res) => {
         const mockTestObj = mockTest.toObject();
 
         // Transform videoSolutionKey to videoSolutionUrl (CloudFront URL)
-        mockTestObj.videoSolutionUrl = getCloudFrontUrl(mockTestObj.videoSolutionKey);
+        mockTestObj.videoSolutionUrl = getBunnyStreamUrl(mockTestObj.videoSolutionKey);
 
         // Map correctOption to correctOptionIndex for frontend compatibility
         if (mockTestObj.questions) {

@@ -6,7 +6,7 @@ const lectureSchema = new mongoose.Schema({
         required: true
     },
     videoKey: {
-        type: String,  // CloudFront file key (e.g., "A_single_steady_202510011654.mp4")
+        type: String,  // Bunny Stream video ID (GUID)
         required: true
     },
     duration: {

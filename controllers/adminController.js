@@ -168,12 +168,12 @@ const createLecture = async (req, res) => {
         const { title, videoKey, duration, isFree, courseId, sectionId } = req.body;
 
         if (!videoKey) {
-            return res.status(400).json({ message: 'Video key is required (CloudFront file key)' });
+            return res.status(400).json({ message: 'Video key is required (Bunny Stream video ID)' });
         }
 
         const lecture = await Lecture.create({
             title,
-            videoKey,  // CloudFront file key
+            videoKey,  // Bunny Stream video ID
             duration: duration || '',
             isFree: isFree || false,
             course: courseId
