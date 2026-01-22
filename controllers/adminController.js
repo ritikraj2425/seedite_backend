@@ -94,7 +94,7 @@ const getAdminStats = async (req, res) => {
 // @access  Admin
 const createCourse = async (req, res) => {
     try {
-        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText } = req.body;
 
         const course = await Course.create({
             title,
@@ -104,7 +104,9 @@ const createCourse = async (req, res) => {
             thumbnail,
             category,
             instructor: instructor || 'Ritik Raj',
-            courseDetails: courseDetails || []
+            courseDetails: courseDetails || [],
+            launchLater: launchLater || false,
+            launchDateText: launchDateText || ''
         });
 
         res.status(201).json(course);
@@ -124,7 +126,7 @@ const updateCourse = async (req, res) => {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText } = req.body;
 
         course.title = title || course.title;
         course.description = description || course.description;
@@ -134,6 +136,8 @@ const updateCourse = async (req, res) => {
         course.category = category || course.category;
         course.instructor = instructor || course.instructor;
         if (courseDetails) course.courseDetails = courseDetails;
+        if (launchLater !== undefined) course.launchLater = launchLater;
+        if (launchDateText !== undefined) course.launchDateText = launchDateText;
 
         const updatedCourse = await course.save();
         res.json(updatedCourse);

@@ -104,9 +104,9 @@ const enrollCourse = async (req, res) => {
 // @access  Private/Admin
 const createCourse = async (req, res) => {
     try {
-        const { title, description, price, originalPrice, thumbnail } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText } = req.body;
         const course = new Course({
-            title, description, price, originalPrice, thumbnail
+            title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText
         });
         const createdCourse = await course.save();
         res.status(201).json(createdCourse);

@@ -24,6 +24,14 @@ const courseSchema = new mongoose.Schema({
     originalPrice: {
         type: Number
     },
+    launchLater: {
+        type: Boolean,
+        default: false
+    },
+    launchDateText: {
+        type: String,
+        default: ''
+    },
     category: {
         type: String,
         default: ''
