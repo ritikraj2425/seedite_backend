@@ -183,6 +183,18 @@ const verifyPayment = async (req, res) => {
 
         if (!user.enrolledCourses.includes(courseId)) {
             user.enrolledCourses.push(courseId);
+
+            // Auto-enroll logic: Buy course X get course Y free
+            const TARGET_COURSE_ID = "6960e65b670769cfa385fcc4";
+            const FREE_BATCH_ID = "697135aa4d70d320275ffcc7";
+
+            if (courseId.toString() === TARGET_COURSE_ID) {
+                if (!user.enrolledCourses.includes(FREE_BATCH_ID)) {
+                    user.enrolledCourses.push(FREE_BATCH_ID);
+                    console.log(`[Payment] User ${req.user._id} auto-enrolled in free batch ${FREE_BATCH_ID} (verify)`);
+                }
+            }
+
             await user.save();
 
             // Update enrollment status
@@ -243,6 +255,18 @@ const enrollUserInCourse = async (userId, courseId, paymentRecord) => {
 
         if (!user.enrolledCourses.includes(courseId)) {
             user.enrolledCourses.push(courseId);
+
+            // Auto-enroll logic: Buy course X get course Y free
+            const TARGET_COURSE_ID = "6960e65b670769cfa385fcc4";
+            const FREE_BATCH_ID = "697135aa4d70d320275ffcc7";
+
+            if (courseId.toString() === TARGET_COURSE_ID) {
+                if (!user.enrolledCourses.includes(FREE_BATCH_ID)) {
+                    user.enrolledCourses.push(FREE_BATCH_ID);
+                    console.log(`[Payment] User ${userId} auto-enrolled in free batch ${FREE_BATCH_ID}`);
+                }
+            }
+
             await user.save();
             console.log(`[Payment] User ${userId} enrolled in course ${courseId}`);
         } else {
