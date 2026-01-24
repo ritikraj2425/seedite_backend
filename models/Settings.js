@@ -1,0 +1,25 @@
+const mongoose = require('mongoose');
+
+const settingsSchema = new mongoose.Schema({
+    key: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    value: {
+        type: mongoose.Schema.Types.Mixed,
+        required: true
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Pre-save middleware to update timestamp
+settingsSchema.pre('save', function (next) {
+    this.updatedAt = new Date();
+    next();
+});
+
+module.exports = mongoose.model('Settings', settingsSchema);

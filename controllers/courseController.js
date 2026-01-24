@@ -63,9 +63,45 @@ const getCourseById = async (req, res) => {
             }
             res.json(courseObj);
         } else {
-            // Return only public info
-            const publicInfo = await Course.findById(req.params.id).select('-lectures -sections.lectures -mockTests');
-            res.json({ ...publicInfo.toObject(), isEnrolled: false });
+            // Return public info + FREE/Demo lectures only
+            const courseObj = course.toObject();
+
+            // Filter to only isFree lectures (demos)
+            const freeLectures = (courseObj.lectures || [])
+                .filter(lecture => lecture.isFree)
+                .map(lecture => ({
+                    ...lecture,
+                    videoUrl: getBunnyStreamUrl(lecture.videoKey)
+                }));
+
+            // Filter sections to only include isFree lectures
+            const sectionsWithFreeLectures = (courseObj.sections || []).map(section => ({
+                ...section,
+                lectures: (section.lectures || [])
+                    .filter(lecture => lecture.isFree)
+                    .map(lecture => ({
+                        ...lecture,
+                        videoUrl: getBunnyStreamUrl(lecture.videoKey)
+                    }))
+            }));
+
+            res.json({
+                _id: courseObj._id,
+                title: courseObj.title,
+                description: courseObj.description,
+                price: courseObj.price,
+                originalPrice: courseObj.originalPrice,
+                thumbnail: courseObj.thumbnail,
+                category: courseObj.category,
+                instructor: courseObj.instructor,
+                courseDetails: courseObj.courseDetails,
+                launchLater: courseObj.launchLater,
+                launchDateText: courseObj.launchDateText,
+                lectures: freeLectures,
+                sections: sectionsWithFreeLectures,
+                mockTests: [], // Don't show mock tests to non-enrolled
+                isEnrolled: false
+            });
         }
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
