@@ -24,6 +24,7 @@ const uploadFile = async (file) => {
     let folder = 'others';
     if (file.mimetype.startsWith('image/')) folder = 'images';
     else if (file.mimetype.startsWith('video/')) folder = 'videos';
+    else if (file.mimetype === 'application/pdf') folder = 'pdfs';
 
     const fileName = generateFileName(file.originalname, folder);
 

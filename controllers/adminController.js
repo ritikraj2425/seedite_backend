@@ -169,15 +169,22 @@ const deleteCourse = async (req, res) => {
 // @access  Admin
 const createLecture = async (req, res) => {
     try {
-        const { title, videoKey, duration, isFree, courseId, sectionId } = req.body;
+        const { title, type, videoKey, pdfUrl, duration, isFree, courseId, sectionId } = req.body;
+        const lectureType = type || 'video';
 
-        if (!videoKey) {
-            return res.status(400).json({ message: 'Video key is required (Bunny Stream video ID)' });
+        // Validation based on type
+        if (lectureType === 'video' && !videoKey) {
+            return res.status(400).json({ message: 'Video key is required for video lectures' });
+        }
+        if (lectureType === 'pdf' && !pdfUrl) {
+            return res.status(400).json({ message: 'PDF URL is required for PDF lectures' });
         }
 
         const lecture = await Lecture.create({
             title,
-            videoKey,  // Bunny Stream video ID
+            type: lectureType,
+            videoKey: lectureType === 'video' ? videoKey : undefined,
+            pdfUrl: lectureType === 'pdf' ? pdfUrl : undefined,
             duration: duration || '',
             isFree: isFree || false,
             course: courseId
@@ -215,10 +222,12 @@ const updateLecture = async (req, res) => {
             return res.status(404).json({ message: 'Lecture not found' });
         }
 
-        const { title, videoKey, duration, isFree } = req.body;
+        const { title, type, videoKey, pdfUrl, duration, isFree } = req.body;
 
         lecture.title = title || lecture.title;
-        lecture.videoKey = videoKey || lecture.videoKey;
+        if (type) lecture.type = type;
+        if (videoKey !== undefined) lecture.videoKey = videoKey;
+        if (pdfUrl !== undefined) lecture.pdfUrl = pdfUrl;
         lecture.duration = duration !== undefined ? duration : lecture.duration;
         lecture.isFree = isFree !== undefined ? isFree : lecture.isFree;
 

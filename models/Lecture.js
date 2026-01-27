@@ -5,9 +5,18 @@ const lectureSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    type: {
+        type: String,
+        enum: ['video', 'pdf'],
+        default: 'video'
+    },
     videoKey: {
         type: String,  // Bunny Stream video ID (GUID)
-        required: true
+        required: false // Required only if type is 'video'
+    },
+    pdfUrl: {
+        type: String, // S3 URL for PDF
+        required: false // Required only if type is 'pdf'
     },
     duration: {
         type: String,  // Optional: Display duration like "10:30"
