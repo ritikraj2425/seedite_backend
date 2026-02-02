@@ -53,19 +53,17 @@ const getBunnyStreamUrl = (videoId) => {
     const { token, expires } = generateBunnyToken(videoId);
 
     // Player parameters for better mobile experience
-    // playsinline: allows inline play on iOS
-    // showSpeed: shows speed controls
-    // preload: preloads video for faster start
-    // responsive: adapts player UI to container size
-    const playerParams = 'responsive=true&playsinline=true&showSpeed=true&preload=true';
+    // Updated to new player params per Bunny support
+    const playerParams = 'autoplay=true&loop=false&muted=false&preload=true&responsive=true';
 
     if (token) {
         // Signed embed URL with token, expires, and player params
-        return `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}?token=${token}&expires=${expires}&${playerParams}`;
+        // Updated domain from iframe.mediadelivery.net to player.mediadelivery.net
+        return `https://player.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}?token=${token}&expires=${expires}&${playerParams}`;
     }
 
     // Fallback without token (will fail if auth is enabled)
-    return `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}?${playerParams}`;
+    return `https://player.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}?${playerParams}`;
 };
 
 /**
