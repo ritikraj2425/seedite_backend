@@ -30,14 +30,25 @@ const getMockTestById = async (req, res) => {
         // Map correctOption to correctOptionIndex for frontend compatibility
         if (mockTestObj.questions) {
             mockTestObj.questions = mockTestObj.questions.map(q => ({
-                ...q,
                 type: q.type || 'mcq',
                 externalLink: q.externalLink || '',
                 isUnrated: q.isUnrated || false,
                 correctOptionIndex: q.correctOption,  // Frontend expects correctOptionIndex
-                questionText: q.text,  // Frontend expects questionText, admin saves as text
-                solution: q.solution || '' // Include solution in response
+                questionText: q.type === 'mcq' ? q.text : (q.text || ''),  // Frontend expects questionText
+                // Explicitly DO NOT include correctOption or solution here for security
+                options: q.options || [],
+                image: q.image || '',
+                marks: q.marks,
+                _id: q._id
             }));
+        }
+
+        // DOUBLE CHECK: Ensure no sensitive data at root level of mapped object
+        if (mockTestObj.questions) {
+            mockTestObj.questions.forEach(q => {
+                delete q.correctOption;
+                delete q.solution;
+            });
         }
 
         res.json(mockTestObj);

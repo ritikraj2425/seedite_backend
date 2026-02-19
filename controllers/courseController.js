@@ -25,7 +25,10 @@ const getCourseById = async (req, res) => {
                 path: 'sections.lectures',
                 model: 'Lecture'
             })
-            .populate('mockTests');
+            .populate({
+                path: 'mockTests',
+                select: '-questions' // Exclude questions array to prevent massive payload
+            });
 
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });

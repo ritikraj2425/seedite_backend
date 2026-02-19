@@ -49,6 +49,14 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// Public endpoint: signed embed URL for the homepage founder video
+app.get('/api/public/founder-video', (req, res) => {
+    const { getBunnyStreamUrl } = require('./config/bunny');
+    const FOUNDER_VIDEO_ID = '6db29493-81b0-4404-8400-0d0ac2929349';
+    const embedUrl = getBunnyStreamUrl(FOUNDER_VIDEO_ID);
+    res.json({ embedUrl });
+});
+
 // Health Check with connection test
 app.get('/api/health', async (req, res) => {
     try {
