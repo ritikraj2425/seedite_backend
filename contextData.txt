@@ -1,0 +1,78 @@
+[dotenv@17.2.3] injecting env (24) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Connecting to MongoDB...
+MongoDB Connected: ac-xkhtbkq-shard-00-01.mqn2ijc.mongodb.net
+=== COURSES ===
+Title: Bridge – Complete NSAT Prep + Free Foundation Course
+Description: A complete NSAT preparation program covering aptitude, coding, and interviews, along with a free foundation course to strengthen your basics from the ground up. Learn through structured mock tests, their solutions, and real guidance from students and interviewers who’ve been through the NSAT process.
+Price: 1499
+---
+Title: Bridge Foundations – Pre College Program
+Description: Get college-ready with Bridge Foundations, a pre-college program that teaches everything you need to start strong: Python programming, logical thinking, coding with math, and problem-solving skills. Learn through hands-on projects and practical exercises, and step into college confident and prepared.
+Price: 999
+---
+=== BLOGS ===
+---
+Title: Seedite: Built to Crack NSAT, Not Just Sell Courses
+Content: # Seedite: Built to Crack NSAT, Not Just Sell Courses
+
+**Tags:** Seedite, NSAT Preparation, Newton School of Technology, NST Admission, NSAT Course, Engineering Entrance Exams, College Admissions India, Aptitude and Coding Prep, NST Interview Prep
+
+---
+
+Preparing for college entrance exams in India usually means one thing: information overload. Endless YouTube playlists, scattered mock tests, generic aptitude questions, and advice from people who may never have faced the exam you’re preparing fo...
+---
+Title: Bridge: The Complete NSAT Course From Pre-College Foundations to Final Selection
+Content: # Bridge – The Complete NSAT Course  
+### By Seedite  
+**From NSAT to Interviews to Pre-College Foundations — one structured journey**
+
+Getting into **NST (Newton School of Technology)** isn’t just about cracking an exam. It’s about thinking clearly, building strong fundamentals, performing well in interviews, and entering college already prepared for what lies ahead.
+
+**Bridge** is Seedite’s first course, designed exactly for this purpose.  
+Not just to help you clear **NSAT**, but to help you ...
+---
+Title: Bridge Foundations – Pre-College Program
+Content: ## Bridge Foundations: Build Strong Fundamentals Before College
+
+The transition from school to college is often underestimated. Students suddenly face coding, logic-heavy problem solving, and mathematics applied in unfamiliar ways. The difficulty is rarely about intelligence — it’s about preparation.
+
+**Bridge Foundations** is the pre-college foundation module inside **Bridge – Complete NSAT Prep + Free Foundation Course**, created by **Seedite** to close this exact gap.
+
+This module focuses on ...
+---
+Title: What Is the NSAT and its Exam Pattern and Marking Scheme? (Complete & Official Guide)
+Content: # What is the NSAT? Exam Pattern, Marking Scheme & Preparation Guide for Newton School of Technology
+
+If you’re aspiring to join the **Newton School of Technology (NST)**, clearing the **NSAT (Newton Scholastic Aptitude Test)** is your first step. Whether you're applying for a **coding-focused program** or the **general B.Tech pathway**, understanding the NSAT exam pattern, marking scheme, and preparation strategy is crucial.
+
+In this guide, we break down everything you need to know about the NS...
+---
+Title: NSAT Preparation Guide: Strategy, Study Plan & Best Courses for Success
+Content: ## How to Prepare for NSAT Effectively?
+
+Preparing for the NSAT is not about memorising formulas or solving random questions. The exam is designed to test **fundamental thinking, logical clarity, and learnability**. A structured and concept-driven approach works far better than last-minute cramming.
+
+---
+
+### 1. First, Know Which NSAT You’re Appearing For
+NSAT has two paths, and your preparation should match your exam:
+
+- **Coding NSAT** → Focus on coding logic, pseudocode, and algorithms  
+- **...
+---
+Title: Complete NSAT Syllabus & Preparation Guide for Newton School of Technology (NST)
+Content: If you're preparing for the **Newton Scholastic Aptitude Test (NSAT)** for admission to **Newton School of Technology (NST)**, understanding the syllabus and having a strategic preparation plan is crucial. This comprehensive guide covers everything you need to know about what to study and how to prepare effectively.
+
+---
+
+## What is the NSAT?
+
+The **NSAT** is the entrance exam for Newton School of Technology's undergraduate programs. It's designed to assess your **fundamental thinking, logical c...
+---
+Title: What Is the NSAT? Purpose, Structure, and Skills It Tests
+Content: ## Introduction
+
+If you’re hearing about the NSAT for the first time, it’s easy to assume it’s just another entrance exam that rewards memorisation and speed. That assumption is exactly where most students misunderstand it.
+
+The **Newton Scholastic Aptitude Test (NSAT)** is designed to evaluate *how you think*, not how much you can memorise. Its goal is to assess reasoning ability, problem-solving skills, and learning readiness — qualities that matter deeply in modern, technology-focused educati...
+---
