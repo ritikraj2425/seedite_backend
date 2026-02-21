@@ -14,7 +14,9 @@ const createCoupon = async (req, res) => {
             expiryDate,
             usageLimit,
             minPurchaseAmount,
-            description
+            description,
+            assignedTo,
+            assignedAmount
         } = req.body;
 
         // Validate discount value for percentage
@@ -44,7 +46,9 @@ const createCoupon = async (req, res) => {
             expiryDate: new Date(expiryDate),
             usageLimit: usageLimit || null,
             minPurchaseAmount: minPurchaseAmount || 0,
-            description: description || ''
+            description: description || '',
+            assignedTo: assignedTo || [],
+            assignedAmount: assignedAmount || 0
         });
 
         console.log(`[Coupon] Created: ${coupon.code} by admin: ${req.user._id}`);
@@ -66,6 +70,7 @@ const getAllCoupons = async (req, res) => {
     try {
         const coupons = await Coupon.find()
             .populate('course', 'title')
+            .populate('assignedTo', 'name email')
             .sort({ createdAt: -1 });
 
         res.json({
@@ -84,7 +89,7 @@ const getAllCoupons = async (req, res) => {
 // @access  Admin
 const getCouponById = async (req, res) => {
     try {
-        const coupon = await Coupon.findById(req.params.id).populate('course', 'title');
+        const coupon = await Coupon.findById(req.params.id).populate('course', 'title').populate('assignedTo', 'name email');
 
         if (!coupon) {
             return res.status(404).json({ message: 'Coupon not found' });
@@ -120,7 +125,8 @@ const updateCoupon = async (req, res) => {
             usageLimit,
             minPurchaseAmount,
             isActive,
-            description
+            description,
+            assignedTo
         } = req.body;
 
         // Check if new code already exists (if code is being changed)
@@ -148,6 +154,8 @@ const updateCoupon = async (req, res) => {
         if (minPurchaseAmount !== undefined) coupon.minPurchaseAmount = minPurchaseAmount;
         if (isActive !== undefined) coupon.isActive = isActive;
         if (description !== undefined) coupon.description = description;
+        if (assignedTo !== undefined) coupon.assignedTo = assignedTo;
+        // NOTE: assignedAmount is intentionally NOT updatable after creation
 
         const updatedCoupon = await coupon.save();
 
@@ -279,11 +287,87 @@ const validateCoupon = async (req, res) => {
     }
 };
 
+// @desc    Get coupons assigned to the logged-in user
+// @route   GET /api/coupons/my-coupons
+// @access  Private (logged-in user)
+const getMyCoupons = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const coupons = await Coupon.find({ assignedTo: userId })
+            .populate('course', 'title')
+            .sort({ createdAt: -1 });
+
+        // Add computed earnings fields
+        const enrichedCoupons = coupons.map(c => {
+            const couponObj = c.toJSON();
+            const commissionPerUse = couponObj.assignedAmount - couponObj.discountValue;
+            const totalEarnings = commissionPerUse * couponObj.usedCount;
+            const totalPaid = (couponObj.paymentHistory || []).reduce((sum, p) => sum + p.amount, 0);
+            const pendingAmount = totalEarnings - totalPaid;
+            return {
+                ...couponObj,
+                commissionPerUse: Math.max(0, commissionPerUse),
+                totalEarnings: Math.max(0, totalEarnings),
+                totalPaid,
+                pendingAmount: Math.max(0, pendingAmount)
+            };
+        });
+
+        res.json({
+            success: true,
+            count: enrichedCoupons.length,
+            coupons: enrichedCoupons
+        });
+    } catch (error) {
+        console.error('Get my coupons error:', error);
+        res.status(500).json({ message: 'Failed to fetch your coupons', error: error.message });
+    }
+};
+
+// @desc    Record a payment to coupon partner
+// @route   POST /api/coupons/:id/payment
+// @access  Admin
+const addPayment = async (req, res) => {
+    try {
+        const coupon = await Coupon.findById(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: 'Coupon not found' });
+        }
+
+        const { amount, note } = req.body;
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ message: 'Payment amount must be greater than 0' });
+        }
+
+        coupon.paymentHistory.push({
+            amount,
+            date: new Date(),
+            note: note || ''
+        });
+
+        await coupon.save();
+
+        console.log(`[Coupon] Payment of ₹${amount} recorded for ${coupon.code} by admin: ${req.user._id}`);
+
+        res.json({
+            success: true,
+            message: `Payment of ₹${amount} recorded successfully`,
+            paymentHistory: coupon.paymentHistory
+        });
+    } catch (error) {
+        console.error('Add payment error:', error);
+        res.status(500).json({ message: 'Failed to record payment', error: error.message });
+    }
+};
+
 module.exports = {
     createCoupon,
     getAllCoupons,
     getCouponById,
     updateCoupon,
     deleteCoupon,
-    validateCoupon
+    validateCoupon,
+    getMyCoupons,
+    addPayment
 };

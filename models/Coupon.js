@@ -46,7 +46,20 @@ const couponSchema = new mongoose.Schema({
     description: {
         type: String,
         default: ''
-    }
+    },
+    assignedAmount: {
+        type: Number,
+        default: 0 // Amount allocated per referral (e.g., 350). Locked after creation.
+    },
+    paymentHistory: [{
+        amount: { type: Number, required: true },
+        date: { type: Date, default: Date.now },
+        note: { type: String, default: '' }
+    }],
+    assignedTo: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, {
     timestamps: true
 });

@@ -6,7 +6,9 @@ const {
     getCouponById,
     updateCoupon,
     deleteCoupon,
-    validateCoupon
+    validateCoupon,
+    getMyCoupons,
+    addPayment
 } = require('../controllers/couponController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,8 +21,9 @@ const adminProtect = (req, res, next) => {
     }
 };
 
-// Client route - validate coupon (requires login)
+// Client routes (requires login)
 router.post('/validate', protect, validateCoupon);
+router.get('/my-coupons', protect, getMyCoupons);
 
 // Admin routes - full CRUD
 router.post('/', protect, adminProtect, createCoupon);
@@ -28,5 +31,6 @@ router.get('/', protect, adminProtect, getAllCoupons);
 router.get('/:id', protect, adminProtect, getCouponById);
 router.put('/:id', protect, adminProtect, updateCoupon);
 router.delete('/:id', protect, adminProtect, deleteCoupon);
+router.post('/:id/payment', protect, adminProtect, addPayment);
 
 module.exports = router;
