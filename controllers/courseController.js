@@ -42,7 +42,7 @@ const getCourseById = async (req, res) => {
             if (courseObj.lectures) {
                 courseObj.lectures = courseObj.lectures.map(lecture => ({
                     ...lecture,
-                    videoUrl: getBunnyStreamUrl(lecture.videoKey)  // Construct full URL
+                    videoUrl: lecture.videoUrl || getBunnyStreamUrl(lecture.videoKey)  // Keep YouTube URL if exists
                 }));
             }
 
@@ -52,7 +52,7 @@ const getCourseById = async (req, res) => {
                     ...section,
                     lectures: section.lectures.map(lecture => ({
                         ...lecture,
-                        videoUrl: getBunnyStreamUrl(lecture.videoKey)
+                        videoUrl: lecture.videoUrl || getBunnyStreamUrl(lecture.videoKey) // Keep YouTube URL if exists
                     }))
                 }));
             }
@@ -74,7 +74,7 @@ const getCourseById = async (req, res) => {
                 .filter(lecture => lecture.isFree)
                 .map(lecture => ({
                     ...lecture,
-                    videoUrl: getBunnyStreamUrl(lecture.videoKey)
+                    videoUrl: lecture.videoUrl || getBunnyStreamUrl(lecture.videoKey)
                 }));
 
             // Filter sections to only include isFree lectures
@@ -84,7 +84,7 @@ const getCourseById = async (req, res) => {
                     .filter(lecture => lecture.isFree)
                     .map(lecture => ({
                         ...lecture,
-                        videoUrl: getBunnyStreamUrl(lecture.videoKey)
+                        videoUrl: lecture.videoUrl || getBunnyStreamUrl(lecture.videoKey)
                     }))
             }));
 

@@ -14,6 +14,10 @@ const lectureSchema = new mongoose.Schema({
         type: String,  // Bunny Stream video ID (GUID)
         required: false // Required only if type is 'video'
     },
+    videoUrl: {
+        type: String,  // YouTube or other external video URL
+        required: false
+    },
     pdfUrl: {
         type: String, // S3 URL for PDF
         required: false // Required only if type is 'pdf'

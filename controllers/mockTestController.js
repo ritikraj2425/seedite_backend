@@ -14,11 +14,13 @@ const getMockTestById = async (req, res) => {
         }
 
         // Security: Verify user is enrolled in the course
-        const user = await User.findById(req.user._id);
-        const courseId = mockTest.course?._id || mockTest.course;
+        if (!mockTest.isIQTest) {
+            const user = await User.findById(req.user._id);
+            const courseId = mockTest.course?._id || mockTest.course;
 
-        if (!user.enrolledCourses.includes(courseId.toString()) && req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'You must be enrolled in this course to access this test' });
+            if (!user.enrolledCourses.includes(courseId.toString()) && req.user.role !== 'admin') {
+                return res.status(403).json({ message: 'You must be enrolled in this course to access this test' });
+            }
         }
 
         // Transform response for frontend compatibility
@@ -35,7 +37,7 @@ const getMockTestById = async (req, res) => {
                 isUnrated: q.isUnrated || false,
                 correctOptionIndex: q.correctOption,  // Frontend expects correctOptionIndex
                 questionText: q.type === 'mcq' ? q.text : (q.text || ''),  // Frontend expects questionText
-                // Explicitly DO NOT include correctOption or solution here for security
+                solution: q.solution || '',  // Solution explanation shown after submission
                 options: q.options || [],
                 image: q.image || '',
                 marks: q.marks,
@@ -47,7 +49,6 @@ const getMockTestById = async (req, res) => {
         if (mockTestObj.questions) {
             mockTestObj.questions.forEach(q => {
                 delete q.correctOption;
-                delete q.solution;
             });
         }
 
@@ -63,7 +64,7 @@ const getMockTestById = async (req, res) => {
 // @access  Private
 const submitMockTest = async (req, res) => {
     try {
-        const { score, totalMarks, normalizedScore, totalQuestions, answers } = req.body;
+        const { score, totalMarks, normalizedScore, totalQuestions, answers, timeSpent, totalTime } = req.body;
         const user = await User.findById(req.user._id);
 
         if (user) {
@@ -79,6 +80,8 @@ const submitMockTest = async (req, res) => {
                 normalizedScore: normalizedScore || 0,
                 totalQuestions,
                 answers: answers || {},
+                timeSpent: timeSpent || {},
+                totalTime: totalTime || 0,
                 completedAt: Date.now()
             };
 
@@ -102,4 +105,59 @@ const submitMockTest = async (req, res) => {
     }
 };
 
-module.exports = { getMockTestById, submitMockTest };
+// @desc    Get all IQ tests
+// @route   GET /api/mock-tests/iq-tests
+// @access  Public
+const getAllIQTests = async (req, res) => {
+    try {
+        const iqTests = await MockTest.find({ isIQTest: true })
+            .select('title duration totalQuestions passingScore createdAt')
+            .sort({ createdAt: -1 });
+        res.json(iqTests);
+    } catch (error) {
+        console.error('getAllIQTests error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get leaderboard for a mock test
+// @route   GET /api/mock-tests/:id/leaderboard
+// @access  Private
+const getMockTestLeaderboard = async (req, res) => {
+    try {
+        const testId = req.params.id;
+        // Find users who have a result for this test
+        const users = await User.find({ "mockTestResults.test": testId })
+            .select('name mockTestResults')
+            .lean();
+            
+        // Map and extract the specific result
+        const leaderboard = users.map(user => {
+            const result = user.mockTestResults.find(r => r.test.toString() === testId);
+            return {
+                _id: user._id,
+                name: user.name,
+                score: result.score,
+                normalizedScore: result.normalizedScore,
+                totalTime: result.totalTime || 0,
+                completedAt: result.completedAt
+            };
+        });
+        
+        // Sort by normalizedScore (DESC), then totalTime (ASC)
+        leaderboard.sort((a, b) => {
+            if (b.normalizedScore !== a.normalizedScore) {
+                return b.normalizedScore - a.normalizedScore;
+            }
+            return a.totalTime - b.totalTime;
+        });
+        
+        // Return top 50 (or all)
+        res.json(leaderboard.slice(0, 50));
+    } catch (error) {
+        console.error('getMockTestLeaderboard error:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+module.exports = { getMockTestById, submitMockTest, getAllIQTests, getMockTestLeaderboard };

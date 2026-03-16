@@ -4,6 +4,8 @@ const MockTest = require('../models/MockTest');
 const User = require('../models/User');
 const Feedback = require('../models/Feedback');
 const FreeAccess = require('../models/FreeAccess');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
@@ -169,12 +171,12 @@ const deleteCourse = async (req, res) => {
 // @access  Admin
 const createLecture = async (req, res) => {
     try {
-        const { title, type, videoKey, pdfUrl, duration, isFree, courseId, sectionId } = req.body;
+        const { title, type, videoKey, videoUrl, pdfUrl, duration, isFree, courseId, sectionId } = req.body;
         const lectureType = type || 'video';
 
         // Validation based on type
-        if (lectureType === 'video' && !videoKey) {
-            return res.status(400).json({ message: 'Video key is required for video lectures' });
+        if (lectureType === 'video' && !videoKey && !videoUrl) {
+            return res.status(400).json({ message: 'Video key or YouTube URL is required for video lectures' });
         }
         if (lectureType === 'pdf' && !pdfUrl) {
             return res.status(400).json({ message: 'PDF URL is required for PDF lectures' });
@@ -184,6 +186,7 @@ const createLecture = async (req, res) => {
             title,
             type: lectureType,
             videoKey: lectureType === 'video' ? videoKey : undefined,
+            videoUrl: lectureType === 'video' ? videoUrl : undefined,
             pdfUrl: lectureType === 'pdf' ? pdfUrl : undefined,
             duration: duration || '',
             isFree: isFree || false,
@@ -222,11 +225,12 @@ const updateLecture = async (req, res) => {
             return res.status(404).json({ message: 'Lecture not found' });
         }
 
-        const { title, type, videoKey, pdfUrl, duration, isFree } = req.body;
+        const { title, type, videoKey, videoUrl, pdfUrl, duration, isFree } = req.body;
 
         lecture.title = title || lecture.title;
         if (type) lecture.type = type;
         if (videoKey !== undefined) lecture.videoKey = videoKey;
+        if (videoUrl !== undefined) lecture.videoUrl = videoUrl;
         if (pdfUrl !== undefined) lecture.pdfUrl = pdfUrl;
         lecture.duration = duration !== undefined ? duration : lecture.duration;
         lecture.isFree = isFree !== undefined ? isFree : lecture.isFree;
@@ -342,7 +346,7 @@ const createMockTest = async (req, res) => {
         const mockTest = await MockTest.create({
             title,
             duration: parseInt(duration) || 0,
-            totalQuestions: parseInt(totalQuestions) || 0,
+            totalQuestions: parseInt(totalQuestions) || (questions ? questions.length : 0),
             passingScore: parseInt(passingScore) || 0,
             correctMarks: correctMarks !== undefined ? parseInt(correctMarks) : 4,
             incorrectMarks: incorrectMarks !== undefined ? parseInt(incorrectMarks) : -1,
@@ -432,6 +436,106 @@ const deleteMockTest = async (req, res) => {
 
         await MockTest.deleteOne({ _id: req.params.id });
         res.json({ message: 'Mock Test deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Get all IQ Tests
+// @route   GET /api/admin/iq-tests
+// @access  Admin
+const getIQTests = async (req, res) => {
+    try {
+        const iqTests = await MockTest.find({ isIQTest: true }).sort({ createdAt: -1 });
+        res.json(iqTests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Create IQ Test
+// @route   POST /api/admin/iq-tests
+// @access  Admin
+const createIQTest = async (req, res) => {
+    try {
+        const { title, duration, totalQuestions, passingScore, correctMarks, incorrectMarks, questions } = req.body;
+
+        const iqTest = await MockTest.create({
+            title,
+            isIQTest: true,
+            duration: parseInt(duration) || 0,
+            totalQuestions: parseInt(totalQuestions) || (questions ? questions.length : 0),
+            passingScore: parseInt(passingScore) || 0,
+            correctMarks: correctMarks !== undefined ? parseInt(correctMarks) : 4,
+            incorrectMarks: incorrectMarks !== undefined ? parseInt(incorrectMarks) : -1,
+            questions: (questions || []).map(q => ({
+                type: q.type || 'mcq',
+                text: q.questionText || q.text || '',
+                image: q.image || '',
+                options: q.options || [],
+                correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4,
+                solution: q.solution || ''
+            }))
+        });
+
+        res.status(201).json(iqTest);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update IQ Test
+// @route   PUT /api/admin/iq-tests/:id
+// @access  Admin
+const updateIQTest = async (req, res) => {
+    try {
+        const iqTest = await MockTest.findOne({ _id: req.params.id, isIQTest: true });
+
+        if (!iqTest) {
+            return res.status(404).json({ message: 'IQ Test not found' });
+        }
+
+        const { title, duration, totalQuestions, passingScore, correctMarks, incorrectMarks, questions } = req.body;
+
+        if (title) iqTest.title = title;
+        if (duration !== undefined) iqTest.duration = parseInt(duration);
+        if (totalQuestions !== undefined) iqTest.totalQuestions = parseInt(totalQuestions);
+        if (passingScore !== undefined) iqTest.passingScore = parseInt(passingScore);
+        if (correctMarks !== undefined) iqTest.correctMarks = parseInt(correctMarks);
+        if (incorrectMarks !== undefined) iqTest.incorrectMarks = parseInt(incorrectMarks);
+
+        if (questions) {
+            iqTest.questions = questions.map(q => ({
+                type: q.type || 'mcq',
+                text: q.questionText || q.text || '',
+                image: q.image || '',
+                options: q.options || [],
+                correctOption: (q.correctOptionIndex !== undefined ? q.correctOptionIndex : q.correctOption)?.toString() || '',
+                marks: q.marks !== undefined ? parseInt(q.marks) : 4,
+                solution: q.solution || ''
+            }));
+        }
+
+        const updatedTest = await iqTest.save();
+        res.json(updatedTest);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Delete IQ Test
+// @route   DELETE /api/admin/iq-tests/:id
+// @access  Admin
+const deleteIQTest = async (req, res) => {
+    try {
+        const iqTest = await MockTest.findOneAndDelete({ _id: req.params.id, isIQTest: true });
+
+        if (!iqTest) {
+            return res.status(404).json({ message: 'IQ Test not found' });
+        }
+
+        res.json({ message: 'IQ Test deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -570,6 +674,160 @@ const getFreeAccessList = async (req, res) => {
     }
 };
 
+// @desc    Generate MongoDB Query from Natural Language
+// @route   POST /api/admin/ai-query/generate
+// @access  Admin
+const generateAIQuery = async (req, res) => {
+    try {
+        const { prompt } = req.body;
+
+        if (!prompt) {
+            return res.status(400).json({ message: 'Prompt is required' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ message: 'Gemini API key is missing' });
+        }
+
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const systemPrompt = `
+You are an expert MongoDB Query generator for a learning management system backend.
+The database has the following Mongoose models:
+1. User: { name, email, role (student/admin), enrolledCourses ([Course ID]), mockTestResults }
+2. Course: { title, description, price, category, instructor, lectures ([Lecture ID]), mockTests ([MockTest ID]) }
+3. Lecture: { title, type (video/pdf), isFree, course (Course ID) }
+4. MockTest: { title, duration, totalQuestions, course (Course ID) }
+5. Feedback: { user (User ID), course (Course ID), rating, review }
+6. FreeAccess: { user (User ID), course (Course ID), grantedBy (User ID), reason }
+
+Given the user's natural language request, generate a pure JSON object representing the MongoDB query.
+The JSON must have the following structure exactly:
+{
+  "model": "ModelName", // e.g., "User", "Course"
+  "operation": "operationName", // only "find", "findOne", "countDocuments", "aggregate" are allowed. NEVER write operations that modify data.
+  "match": { ... }, // The query filter object
+  "select": "field1 field2", // Optional string of fields to select
+  "limit": 100 // Optional number to limit results
+}
+
+Ensure the output is strictly valid JSON without markdown wrapping like \`\`\`json. Only output the JSON object.
+`;
+
+        const fullPrompt = systemPrompt + "\nUser Request: " + prompt;
+
+        const result = await model.generateContent(fullPrompt);
+        let responseText = result.response.text().trim();
+        
+        // Remove markdown formatting if Gemini added it
+        if (responseText.startsWith('```json')) {
+            responseText = responseText.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        } else if (responseText.startsWith('```')) {
+            responseText = responseText.replace(/^```\s*/, '').replace(/```$/, '').trim();
+        }
+
+        // Parse to validate JSON
+        const queryJson = JSON.parse(responseText);
+
+        // Basic safety check on operation
+        const allowedOperations = ['find', 'findOne', 'countDocuments', 'aggregate'];
+        if (!allowedOperations.includes(queryJson.operation)) {
+             return res.status(400).json({ message: 'Only read operations are allowed (find, findOne, countDocuments, aggregate).' });
+        }
+
+        res.json(queryJson);
+    } catch (error) {
+        console.error('AI Query Generation Error:', error);
+        res.status(500).json({ message: 'Failed to generate query', error: error.message });
+    }
+};
+
+// @desc    Verify and Execute Generated AI Query
+// @route   POST /api/admin/ai-query/execute
+// @access  Admin
+const executeAIQuery = async (req, res) => {
+    try {
+        const { query } = req.body;
+
+        if (!query || !query.model || !query.operation) {
+            return res.status(400).json({ message: 'Invalid query object' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ message: 'Gemini API key is missing' });
+        }
+
+        // 1. Verify Query Safety using Gemini
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const verificationModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const verificationPrompt = `
+You are a security auditor for a MongoDB database.
+Review the following JSON query object and verify that it is STRICTLY a read-only operation.
+It must NOT contain any MongoDB operators or commands that modify, delete, drop, insert, or update data (e.g., $set, $unset, $delete, $remove, deleteMany, drop, etc.).
+
+Query:
+${JSON.stringify(query, null, 2)}
+
+If the query is 100% safe and read-only, reply with exactly the word "SAFE".
+If the query contains any potentially destructive or modifying intent, reply with exactly the word "UNSAFE".
+Do not output anything else.
+`;
+        
+        const verificationResult = await verificationModel.generateContent(verificationPrompt);
+        const verificationResponse = verificationResult.response.text().trim().toUpperCase();
+
+        if (verificationResponse !== 'SAFE') {
+            return res.status(403).json({ message: 'Query blocked by AI security checks. Unsafe operation detected.' });
+        }
+
+        // 2. Map Model String to Mongoose Model
+        const modelsMap = {
+            'Course': Course,
+            'Lecture': Lecture,
+            'MockTest': MockTest,
+            'User': User,
+            'Feedback': Feedback,
+            'FreeAccess': FreeAccess
+        };
+
+        const MongooseModel = modelsMap[query.model];
+        if (!MongooseModel) {
+            return res.status(400).json({ message: `Model ${query.model} is not supported or does not exist.` });
+        }
+
+        // 3. Double-check operation in code
+        const allowedOperations = ['find', 'findOne', 'countDocuments', 'aggregate'];
+        if (!allowedOperations.includes(query.operation)) {
+            return res.status(403).json({ message: 'Operation not allowed by code-level security.' });
+        }
+
+        // 4. Execute Query
+        let resultData;
+        
+        if (query.operation === 'aggregate') {
+             resultData = await MongooseModel.aggregate(query.match || []);
+        } else {
+             let mongooseQuery = MongooseModel[query.operation](query.match || {});
+             
+             if (query.select) {
+                 mongooseQuery = mongooseQuery.select(query.select);
+             }
+             if (query.limit) {
+                 mongooseQuery = mongooseQuery.limit(query.limit);
+             }
+             
+             resultData = await mongooseQuery.exec();
+        }
+
+        res.json(resultData);
+    } catch (error) {
+        console.error('Execute AI Query Error:', error);
+        res.status(500).json({ message: 'Failed to execute query', error: error.message });
+    }
+};
+
 module.exports = {
     getAdminStats,
     createCourse,
@@ -587,6 +845,12 @@ module.exports = {
     getAllFeedback,
     grantFreeAccess,
     revokeFreeAccess,
-    getFreeAccessList
+    getFreeAccessList,
+    generateAIQuery,
+    executeAIQuery,
+    getIQTests,
+    createIQTest,
+    updateIQTest,
+    deleteIQTest
 };
 

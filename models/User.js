@@ -61,6 +61,14 @@ const userSchema = new mongoose.Schema({
         normalizedScore: Number,
         totalQuestions: Number,
         answers: Object,
+        timeSpent: {
+            type: Object,
+            default: {} // Tracks time spent per question: { "0": 45, "1": 12 }
+        },
+        totalTime: {
+            type: Number,
+            default: 0 // Total time taken in seconds
+        },
         completedAt: {
             type: Date,
             default: Date.now

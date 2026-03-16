@@ -17,7 +17,13 @@ const {
     getAllFeedback,
     grantFreeAccess,
     revokeFreeAccess,
-    getFreeAccessList
+    getFreeAccessList,
+    generateAIQuery,
+    executeAIQuery,
+    getIQTests,
+    createIQTest,
+    updateIQTest,
+    deleteIQTest
 } = require('../controllers/adminController');
 const { getAllUsers } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
@@ -60,9 +66,19 @@ router.post('/courses/:id/sections', protect, adminProtect, createSection);
 router.put('/courses/:id/sections/:sectionId', protect, adminProtect, updateSection);
 router.delete('/courses/:id/sections/:sectionId', protect, adminProtect, deleteSection);
 
+// IQ Test routes
+router.get('/iq-tests', protect, adminProtect, getIQTests);
+router.post('/iq-tests', protect, adminProtect, createIQTest);
+router.put('/iq-tests/:id', protect, adminProtect, updateIQTest);
+router.delete('/iq-tests/:id', protect, adminProtect, deleteIQTest);
+
 // Free Access routes
 router.get('/free-access', protect, adminProtect, getFreeAccessList);
 router.post('/free-access', protect, adminProtect, grantFreeAccess);
 router.delete('/free-access/:userId/:courseId', protect, adminProtect, revokeFreeAccess);
+
+// AI Database Query routes
+router.post('/ai-query/generate', protect, adminProtect, generateAIQuery);
+router.post('/ai-query/execute', protect, adminProtect, executeAIQuery);
 
 module.exports = router;

@@ -17,10 +17,13 @@ const mockTestSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    isIQTest: {
+        type: Boolean,
+        default: false
+    },
     course: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Course',
-        required: true
+        ref: 'Course'
     },
     duration: {
         type: Number, // in minutes
