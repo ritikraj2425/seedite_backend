@@ -299,9 +299,100 @@ const sendPurchaseConfirmationEmail = async (email, userName, courseDetails, pay
     }
 };
 
+/**
+ * Send live session registration confirmation email
+ * @param {string} email - Recipient email
+ * @param {string} userName - User's name
+ * @param {object} sessionDetails - { title, sessionDate, sessionTime }
+ */
+const sendLiveSessionRegistrationEmail = async (email, userName, sessionDetails) => {
+    const transporter = createTransporter();
+
+    // Format dates for display
+    const sessionDateObj = new Date(sessionDetails.sessionDate);
+    const dateStr = sessionDateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // Format "14:30" to "2:30 PM"
+    let timeStr = sessionDetails.sessionTime;
+    if (timeStr && timeStr.includes(':')) {
+        const [hours, minutes] = timeStr.split(':');
+        const h = parseInt(hours, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const formattedHours = h % 12 || 12;
+        timeStr = `${formattedHours}:${minutes} ${ampm}`;
+    }
+
+    const mailOptions = {
+        from: `"Seedite" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to: email,
+        subject: `Registration Confirmed: ${sessionDetails.title}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Session Registration Confirmed</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0; font-size: 28px;">Registration Confirmed! 📅</h1>
+                </div>
+                
+                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+                    <h2 style="color: #333; margin-top: 0;">Hello ${userName}!</h2>
+                    
+                    <p>Thank you for registering for this session! Your spot is confirmed for:</p>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <h3 style="margin: 0 0 10px 0; color: #333;">${sessionDetails.title}</h3>
+                        <p style="margin: 5px 0 0 0; color: #555;"><strong>Date:</strong> ${dateStr}</p>
+                        <p style="margin: 5px 0 0 0; color: #555;"><strong>Time:</strong> ${timeStr}</p>
+                    </div>
+                    
+                    <p style="color: #444; font-size: 16px; margin: 25px 0; padding: 15px; background: #e0e7ff; border-radius: 8px; text-align: center;">
+                        Thank you for registering for this session! Rest of the updates will be shared soon.
+                    </p>
+                    
+                    <p style="color: #666; font-size: 14px;">We're excited to see you there!</p>
+                </div>
+                
+                <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+                    <p>&copy; ${new Date().getFullYear()} Seedite. All rights reserved.</p>
+                </div>
+            </body>
+            </html>
+        `,
+        text: `
+            Hello ${userName}!
+            
+            Thank you for registering for this session! Your spot is confirmed for:
+            
+            Topic: ${sessionDetails.title}
+            Date: ${dateStr}
+            Time: ${timeStr}
+            
+            Thank you for registering for this session! Rest of the updates will be shared soon.
+            
+            We're excited to see you there!
+            - The Seedite Team
+        `
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('[Email] Live session registration email sent:', info.messageId);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('[Email] Error sending live session registration email:', error);
+        // Don't throw - registration email is not critical to UX
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     sendPasswordResetEmail,
     sendWelcomeEmail,
-    sendPurchaseConfirmationEmail
+    sendPurchaseConfirmationEmail,
+    sendLiveSessionRegistrationEmail
 };
-

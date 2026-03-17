@@ -109,6 +109,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/testimonials', require('./routes/testimonialRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/live-sessions', require('./routes/liveSessionRoutes'));
 app.use('/api/health', (req, res) => {
     res.json({
         status: 'ok',
