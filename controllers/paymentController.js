@@ -341,7 +341,15 @@ const handleWebhook = async (req, res) => {
 
                 // Enroll user if not already enrolled
                 if (paymentRecord.enrollmentStatus !== 'enrolled') {
-                    await enrollUserInCourse(paymentRecord.user, paymentRecord.course, paymentRecord);
+                    const enrolled = await enrollUserInCourse(paymentRecord.user, paymentRecord.course, paymentRecord);
+
+                    // Increment coupon usage count if a coupon was used
+                    if (enrolled && paymentRecord.coupon) {
+                        await Coupon.findByIdAndUpdate(paymentRecord.coupon, {
+                            $inc: { usedCount: 1 }
+                        });
+                        console.log(`[Webhook] Coupon usage incremented for coupon: ${paymentRecord.coupon}`);
+                    }
                 }
             } else {
                 // Payment record not found - try to enroll using notes
@@ -363,6 +371,15 @@ const handleWebhook = async (req, res) => {
                     });
 
                     await enrollUserInCourse(notes.userId, notes.courseId, paymentRecord);
+
+                    // Increment coupon if the original order had one (from notes)
+                    if (notes.couponCode) {
+                        const coupon = await Coupon.findOne({ code: notes.couponCode.toUpperCase() });
+                        if (coupon) {
+                            await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
+                            console.log(`[Webhook] Coupon usage incremented for coupon: ${coupon.code}`);
+                        }
+                    }
                 } else {
                     console.error(`[Webhook] Cannot enroll: missing userId or courseId in notes`);
                 }
@@ -432,6 +449,7 @@ const getAllPayments = async (req, res) => {
         const payments = await Payment.find()
             .populate('user', 'name email')
             .populate('course', 'title')
+            .populate('coupon', 'code discountType discountValue')
             .sort({ createdAt: -1 })
             .limit(100);
 
