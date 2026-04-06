@@ -8,7 +8,6 @@ jobs:
 deploy:
 runs-on: ubuntu-latest
 
-```
 steps:
   - name: Checkout repo
     uses: actions/checkout@v4
@@ -31,9 +30,8 @@ steps:
       username: ubuntu
       key: ${{ secrets.SERVER_SSH_KEY }}
       script: |
-        cd /home/ubuntu/backend
+        cd /home/ubuntu/backend/seedite_backend
         git pull origin main
         npm install
         printf "%s" "${{ secrets.PROD_ENV_FILE }}" > .env
         pm2 restart Backendapi
-```
