@@ -9,6 +9,7 @@ jobs:
 deploy:
 runs-on: ubuntu-latest
 
+```
 steps:
   - name: Checkout repo
     uses: actions/checkout@v4
@@ -36,3 +37,4 @@ steps:
         npm install
         printf "%s" "${{ secrets.PROD_ENV_FILE }}" > .env
         pm2 restart Backendapi
+```
