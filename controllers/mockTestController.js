@@ -1,5 +1,7 @@
 const MockTest = require('../models/MockTest');
 const User = require('../models/User');
+const CollegeMember = require('../models/CollegeMember');
+const College = require('../models/College');
 const { getBunnyStreamUrl } = require('../config/bunny');
 
 // @desc    Get mock test by ID
@@ -17,8 +19,29 @@ const getMockTestById = async (req, res) => {
         if (!mockTest.isIQTest) {
             const user = await User.findById(req.user._id);
             const courseId = mockTest.course?._id || mockTest.course;
+            
+            const enrolledStrings = user.enrolledCourses.map(c => c.toString());
+            const isDirectlyEnrolled = enrolledStrings.includes(courseId.toString());
+            let hasCollegeAccess = false;
+            
+            if (!isDirectlyEnrolled && req.user.role !== 'admin') {
+                const membership = await CollegeMember.findOne({
+                    email: req.user.email,
+                    status: 'active'
+                });
+                if (membership) {
+                    const college = await College.findOne({
+                        _id: membership.college,
+                        isActive: true,
+                        assignedCourses: courseId
+                    });
+                    if (college) {
+                        hasCollegeAccess = true;
+                    }
+                }
+            }
 
-            if (!user.enrolledCourses.includes(courseId.toString()) && req.user.role !== 'admin') {
+            if (!isDirectlyEnrolled && !hasCollegeAccess && req.user.role !== 'admin') {
                 return res.status(403).json({ message: 'You must be enrolled in this course to access this test' });
             }
         }

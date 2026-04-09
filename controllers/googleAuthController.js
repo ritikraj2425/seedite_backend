@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const CollegeMember = require('../models/CollegeMember');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -120,6 +121,14 @@ const googleCallback = async (req, res) => {
             } catch (emailError) {
                 console.error('[GoogleAuth] Email service error:', emailError);
             }
+
+            // Auto-link any pending college memberships for this email (non-blocking)
+            CollegeMember.updateMany(
+                { email: user.email.toLowerCase(), status: 'pending', user: null },
+                { $set: { user: user._id, status: 'active' } }
+            ).catch(err => {
+                console.error('[GoogleAuth] Failed to auto-link college memberships:', err);
+            });
         }
 
         // Step 4: Generate JWT token and respond

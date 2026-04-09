@@ -1,5 +1,7 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
+const CollegeMember = require('../models/CollegeMember');
+const College = require('../models/College');
 const { getBunnyStreamUrl } = require('../config/bunny');
 
 // @desc    Get all courses
@@ -36,7 +38,31 @@ const getCourseById = async (req, res) => {
 
         const isEnrolled = req.user && req.user.enrolledCourses.includes(req.params.id);
 
-        if (isEnrolled || (req.user && req.user.role === 'admin')) {
+        // B2B College entitlement check
+        let hasCollegeAccess = false;
+        if (req.user && !isEnrolled && req.user.role !== 'admin') {
+            const membership = await CollegeMember.findOne({
+                email: req.user.email,
+                status: 'active'
+            });
+            if (membership) {
+                const college = await College.findOne({
+                    _id: membership.college,
+                    isActive: true,
+                    assignedCourses: req.params.id
+                });
+                if (college) {
+                    hasCollegeAccess = true;
+                    // Auto-link userId if not already linked
+                    if (!membership.user) {
+                        membership.user = req.user._id;
+                        await membership.save();
+                    }
+                }
+            }
+        }
+
+        if (isEnrolled || hasCollegeAccess || (req.user && req.user.role === 'admin')) {
             // Transform videoKey to full CloudFront URL for lectures
             const courseObj = course.toObject();
             if (courseObj.lectures) {
@@ -64,7 +90,7 @@ const getCourseById = async (req, res) => {
                     videoSolutionUrl: getBunnyStreamUrl(test.videoSolutionKey)  // Construct full URL
                 }));
             }
-            res.json(courseObj);
+            res.json({ ...courseObj, hasCollegeAccess });
         } else {
             // Return public info + FREE/Demo lectures only
             const courseObj = course.toObject();

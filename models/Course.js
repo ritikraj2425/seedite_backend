@@ -57,7 +57,16 @@ const courseSchema = new mongoose.Schema({
     mockTests: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MockTest'
-    }]
+    }],
+    communityLink: {
+        type: String,
+        default: ''
+    },
+    communityType: {
+        type: String,
+        enum: ['telegram', 'whatsapp', ''],
+        default: ''
+    }
 }, {
     timestamps: true
 });

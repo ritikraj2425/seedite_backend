@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const CollegeMember = require('../models/CollegeMember');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -6,7 +7,6 @@ const crypto = require('crypto');
 // Generate a unique session ID
 const generateSessionId = () => {
     const sessionId = crypto.randomUUID();
-    console.log(`[Auth] Generated new session ID: ${sessionId}`);
     return sessionId;
 };
 
@@ -57,6 +57,19 @@ const registerUser = async (req, res) => {
                 console.error('[Auth] Failed to send welcome email:', err);
             });
 
+            // Auto-link any college memberships for this email (non-blocking)
+            // 1. Pending -> Active
+            CollegeMember.updateMany(
+                { email: user.email.toLowerCase(), status: 'pending' },
+                { $set: { user: user._id, status: 'active' } }
+            ).catch(err => console.error('[Auth] Pending link error:', err));
+
+            // 2. Revoked/Active (if manually added then deleted) -> Only update ID
+            CollegeMember.updateMany(
+                { email: user.email.toLowerCase(), status: { $ne: 'pending' } },
+                { $set: { user: user._id } }
+            ).catch(err => console.error('[Auth] Revoked link error:', err));
+
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
@@ -104,8 +117,6 @@ const loginUser = async (req, res) => {
                 maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
                 sameSite: 'strict'
             });
-
-            console.log(`[Auth] User ${user.email} logged in with new session: ${sessionId}`);
 
             res.json({
                 _id: user._id,
@@ -175,8 +186,6 @@ const forgotPassword = async (req, res) => {
         const { sendPasswordResetEmail } = require('../utils/emailService');
         await sendPasswordResetEmail(user.email, resetUrl, user.name);
 
-        console.log(`[Auth] Password reset email sent to: ${user.email}`);
-
         res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
     } catch (error) {
         console.error('Forgot password error:', error);
@@ -221,9 +230,6 @@ const resetPassword = async (req, res) => {
         user.activeSessionToken = null;
 
         await user.save();
-
-        console.log(`[Auth] Password reset successful for: ${user.email}`);
-
         res.json({ message: 'Password reset successful. You can now login with your new password.' });
     } catch (error) {
         console.error('Reset password error:', error);

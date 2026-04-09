@@ -96,7 +96,7 @@ const getAdminStats = async (req, res) => {
 // @access  Admin
 const createCourse = async (req, res) => {
     try {
-        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText, communityLink, communityType } = req.body;
 
         const course = await Course.create({
             title,
@@ -108,7 +108,9 @@ const createCourse = async (req, res) => {
             instructor: instructor || 'Ritik Raj',
             courseDetails: courseDetails || [],
             launchLater: launchLater || false,
-            launchDateText: launchDateText || ''
+            launchDateText: launchDateText || '',
+            communityLink: communityLink || '',
+            communityType: communityType || ''
         });
 
         res.status(201).json(course);
@@ -128,7 +130,7 @@ const updateCourse = async (req, res) => {
             return res.status(404).json({ message: 'Course not found' });
         }
 
-        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText } = req.body;
+        const { title, description, price, originalPrice, thumbnail, category, instructor, courseDetails, launchLater, launchDateText, communityLink, communityType } = req.body;
 
         course.title = title || course.title;
         course.description = description || course.description;
@@ -140,6 +142,8 @@ const updateCourse = async (req, res) => {
         if (courseDetails) course.courseDetails = courseDetails;
         if (launchLater !== undefined) course.launchLater = launchLater;
         if (launchDateText !== undefined) course.launchDateText = launchDateText;
+        if (communityLink !== undefined) course.communityLink = communityLink;
+        if (communityType !== undefined) course.communityType = communityType;
 
         const updatedCourse = await course.save();
         res.json(updatedCourse);

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Announcement = require('../models/Announcement');
-const User = require('../models/User'); // Need User model to check enrollments if needed, or rely on request user
+const User = require('../models/User'); 
+const CollegeMember = require('../models/CollegeMember');
+const College = require('../models/College');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 // @route   GET /api/announcements/my-announcements
@@ -17,7 +19,18 @@ router.get('/my-announcements', protect, async (req, res) => {
         // However, standard protect might not populate enrolledCourses fully if it's just ID.
         // Assuming req.user has enrolledCourses array of IDs.
 
-        const enrolledCourseIds = req.user?.enrolledCourses || [];
+        let enrolledCourseIds = req.user?.enrolledCourses || [];
+
+        // Add B2B College courses to the list so students get those announcements
+        if (req.user && req.user.email) {
+            const membership = await CollegeMember.findOne({ email: req.user.email, status: 'active' });
+            if (membership) {
+                const college = await College.findOne({ _id: membership.college, isActive: true });
+                if (college && college.assignedCourses) {
+                    enrolledCourseIds = [...enrolledCourseIds, ...college.assignedCourses];
+                }
+            }
+        }
 
         if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
             return res.json([]);
@@ -33,6 +46,58 @@ router.get('/my-announcements', protect, async (req, res) => {
         res.json(announcements);
     } catch (error) {
         console.error('Error fetching announcements:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/announcements/unread-count
+// @desc    Get count of unread announcements
+// @access  Private
+router.get('/unread-count', protect, async (req, res) => {
+    try {
+        let enrolledCourseIds = req.user?.enrolledCourses || [];
+
+        // Include B2B college courses
+        if (req.user && req.user.email) {
+            const membership = await CollegeMember.findOne({ email: req.user.email, status: 'active' });
+            if (membership) {
+                const college = await College.findOne({ _id: membership.college, isActive: true });
+                if (college && college.assignedCourses) {
+                    enrolledCourseIds = [...enrolledCourseIds, ...college.assignedCourses];
+                }
+            }
+        }
+
+        if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
+            return res.json({ count: 0 });
+        }
+
+        // Use user's last seen timestamp (defaults to account creation time)
+        const lastSeen = req.user.lastSeenAnnouncementAt || req.user.createdAt || new Date(0);
+
+        const count = await Announcement.countDocuments({
+            course: { $in: enrolledCourseIds },
+            createdAt: { $gt: lastSeen }
+        });
+
+        res.json({ count });
+    } catch (error) {
+        console.error('Error fetching unread count:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/announcements/mark-seen
+// @desc    Mark all announcements as seen (update lastSeenAnnouncementAt)
+// @access  Private
+router.post('/mark-seen', protect, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id, {
+            $set: { lastSeenAnnouncementAt: new Date() }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error marking seen:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

@@ -73,7 +73,11 @@ const userSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         }
-    }]
+    }],
+    lastSeenAnnouncementAt: {
+        type: Date,
+        default: null
+    }
 }, {
     timestamps: true
 });

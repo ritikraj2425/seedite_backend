@@ -93,6 +93,31 @@ router.post('/bunny', protect, admin, upload.single('file'), handleBunnyUpload);
 // Bunny Stream upload route for videos - expects field name 'video'
 router.post('/bunny/video', protect, admin, upload.single('video'), handleBunnyUpload);
 
+// Direct-to-Bunny upload: create video placeholder and return credentials
+// The admin frontend uploads directly to Bunny's CDN, bypassing server body size limits
+router.post('/bunny/create-upload', protect, admin, async (req, res) => {
+    try {
+        const { title } = req.body;
+        if (!title) {
+            return res.status(400).json({ message: 'Video title is required' });
+        }
+
+        const { createVideo } = require('../utils/bunny');
+        const { videoId, libraryId } = await createVideo(title);
+
+        res.json({
+            videoId,
+            libraryId,
+            apiKey: process.env.BUNNY_API_KEY,
+            uploadUrl: `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
+            embedUrl: `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`
+        });
+    } catch (error) {
+        console.error('Create upload error:', error);
+        res.status(500).json({ message: 'Failed to create video upload', error: error.message });
+    }
+});
+
 // Multer error handling middleware
 router.use((error, req, res, next) => {
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
