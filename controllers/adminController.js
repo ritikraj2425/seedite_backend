@@ -4,7 +4,7 @@ const MockTest = require('../models/MockTest');
 const User = require('../models/User');
 const Feedback = require('../models/Feedback');
 const FreeAccess = require('../models/FreeAccess');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 
 // @desc    Get admin dashboard stats
@@ -693,8 +693,7 @@ const generateAIQuery = async (req, res) => {
             return res.status(500).json({ message: 'Gemini API key is missing' });
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         const systemPrompt = `
 You are an expert MongoDB Query generator for a learning management system backend.
@@ -721,8 +720,8 @@ Ensure the output is strictly valid JSON without markdown wrapping like \`\`\`js
 
         const fullPrompt = systemPrompt + "\nUser Request: " + prompt;
 
-        const result = await model.generateContent(fullPrompt);
-        let responseText = result.response.text().trim();
+        const result = await ai.models.generateContent({ model: "gemini-2.5-pro", contents: fullPrompt });
+        let responseText = result.text.trim();
         
         // Remove markdown formatting if Gemini added it
         if (responseText.startsWith('```json')) {
@@ -763,8 +762,7 @@ const executeAIQuery = async (req, res) => {
         }
 
         // 1. Verify Query Safety using Gemini
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const verificationModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         const verificationPrompt = `
 You are a security auditor for a MongoDB database.
@@ -779,8 +777,8 @@ If the query contains any potentially destructive or modifying intent, reply wit
 Do not output anything else.
 `;
         
-        const verificationResult = await verificationModel.generateContent(verificationPrompt);
-        const verificationResponse = verificationResult.response.text().trim().toUpperCase();
+        const verificationResult = await ai.models.generateContent({ model: "gemini-2.5-pro", contents: verificationPrompt });
+        const verificationResponse = verificationResult.text.trim().toUpperCase();
 
         if (verificationResponse !== 'SAFE') {
             return res.status(403).json({ message: 'Query blocked by AI security checks. Unsafe operation detected.' });

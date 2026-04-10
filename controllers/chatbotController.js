@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 // Comprehensive system prompt built from all Seedite blogs, courses, and homepage data
 const SYSTEM_PROMPT = `
@@ -99,8 +99,7 @@ const handleChat = async (req, res) => {
             return res.status(500).json({ error: 'Chat service is temporarily unavailable.' });
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         let chatHistory = "";
         if (history && Array.isArray(history) && history.length > 0) {
@@ -115,14 +114,41 @@ const handleChat = async (req, res) => {
 
         const fullPrompt = SYSTEM_PROMPT + "\n\n" + chatHistory + "User: " + message + "\nAssistant:";
 
-        const result = await model.generateContent(fullPrompt);
-        const responseText = result.response.text();
+        // Retry logic: up to 3 attempts with timeout
+        const MAX_RETRIES = 3;
+        let lastError = null;
 
-        return res.json({ reply: responseText });
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Gemini API request timed out')), 20000)
+                );
+
+                const apiCall = ai.models.generateContent({
+                    model: 'gemini-2.5-pro',
+                    contents: fullPrompt,
+                });
+
+                const result = await Promise.race([apiCall, timeoutPromise]);
+                const responseText = result.text;
+
+                return res.json({ reply: responseText });
+            } catch (retryError) {
+                lastError = retryError;
+                console.error(`Chatbot attempt ${attempt}/${MAX_RETRIES} failed:`, retryError.message);
+                if (attempt < MAX_RETRIES) {
+                    // Wait 1 second before retrying
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+
+        // All retries exhausted
+        throw lastError;
 
     } catch (error) {
         console.error('Error in chatbot controller:', error);
-        res.status(500).json({ error: 'Failed to generate response. Please try again.' });
+        res.status(500).json({ error: 'Failed to generate response. Please try again.', details: error.message });
     }
 };
 
