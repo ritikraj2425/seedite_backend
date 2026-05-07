@@ -253,6 +253,7 @@ const enrollUserInCourse = async (userId, courseId, paymentRecord) => {
             return false;
         }
 
+        let didEnroll = false;
         if (!user.enrolledCourses.includes(courseId)) {
             user.enrolledCourses.push(courseId);
 
@@ -268,6 +269,7 @@ const enrollUserInCourse = async (userId, courseId, paymentRecord) => {
             }
 
             await user.save();
+            didEnroll = true;
             console.log(`[Payment] User ${userId} enrolled in course ${courseId}`);
         } else {
             console.log(`[Payment] User ${userId} already enrolled in course ${courseId}`);
@@ -278,7 +280,7 @@ const enrollUserInCourse = async (userId, courseId, paymentRecord) => {
             await paymentRecord.save();
         }
 
-        return true;
+        return didEnroll;
     } catch (error) {
         console.error(`[Payment] Enrollment error for user ${userId}:`, error);
         if (paymentRecord) {
@@ -300,10 +302,15 @@ const handleWebhook = async (req, res) => {
         // Verify webhook signature
         const signature = req.headers['x-razorpay-signature'];
 
-        if (webhookSecret && signature) {
+        if (!signature) {
+            console.error('[Webhook] Missing signature header');
+            return res.status(400).json({ message: 'Missing webhook signature' });
+        }
+
+        if (webhookSecret) {
             const expectedSignature = crypto
                 .createHmac('sha256', webhookSecret)
-                .update(JSON.stringify(req.body))
+                .update(req.rawBody || JSON.stringify(req.body))
                 .digest('hex');
 
             if (expectedSignature !== signature) {
@@ -370,10 +377,10 @@ const handleWebhook = async (req, res) => {
                         webhookData: payment
                     });
 
-                    await enrollUserInCourse(notes.userId, notes.courseId, paymentRecord);
+                    const enrolled = await enrollUserInCourse(notes.userId, notes.courseId, paymentRecord);
 
                     // Increment coupon if the original order had one (from notes)
-                    if (notes.couponCode) {
+                    if (enrolled && notes.couponCode) {
                         const coupon = await Coupon.findOne({ code: notes.couponCode.toUpperCase() });
                         if (coupon) {
                             await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
